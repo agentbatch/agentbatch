@@ -32,6 +32,16 @@ owner, provider or signer.
 no pre-hash). The contract checks it with `env.crypto().ed25519_verify`, which
 aborts the whole invocation on failure.
 
+**Verification rule.** The Soroban host uses ed25519-dalek `verify_strict`: `s`
+must be canonical (`s < L`), neither `R` nor the public key may be a
+small-order point, and the cofactorless equation `encode([s]B − [k]A) == R`
+must hold. Many Ed25519 libraries use the cofactored equation and accept
+signatures this rule rejects, so an off-chain verifier must implement exactly
+this rule (`verifyStrict` in `@agentbatch/voucher`), or a provider could accept
+vouchers it can never redeem. Providers also refuse channels whose signer key
+is not a prime-order point (`isSafeSignerKey`): with a mixed-order key most
+honestly produced signatures fail `verify_strict`.
+
 ## Submitted voucher
 
 `redeem_batch` takes `Vec<Voucher>`, where `Voucher` is also a contract type
@@ -62,14 +72,19 @@ Full hex for every case, with the matching signatures, is in the vector file.
 
 ## Cross-language guarantee
 
-- **Rust (source of truth):** `test::vectors` builds the messages with the
-  contract's own `voucher_message`, signs them with `ed25519-dalek`, checks the
-  signatures with the Soroban host, and compares the result with the committed
-  file.
+- **Rust (source of truth):** `test::vectors` builds 10 messages with the
+  contract's own `voucher_message` (account and contract-address providers,
+  the i128 high word, a negative amount and `i128::MIN`), signs them with
+  `ed25519-dalek`, checks the signatures with the Soroban host, and compares
+  the result with the committed file. It also generates 4
+  `invalid_signatures` (mixed-order `R`, small-order `R`, non-canonical `s`,
+  mixed-order signer key) and asserts that both `verify_strict` and the host
+  reject each.
 - **TypeScript:** `packages/voucher/test/vectors.test.ts` rebuilds every
   message with `encodeVoucherMessage` and every signature with `AgentSigner`,
-  and requires byte-for-byte equality. It also checks that the map keys are
-  sorted.
+  and requires byte-for-byte equality. It checks that the TypeScript encoder's
+  own output has sorted map keys, that every invalid signature is rejected,
+  and that 3 of them would pass a generic cofactored verifier.
 - **Testnet:** the demo compares local bytes with the deployed contract's
   `voucher_message` view before any payment (412 bytes, equal).
 

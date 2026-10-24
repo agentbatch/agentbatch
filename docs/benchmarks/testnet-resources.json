@@ -1,6 +1,6 @@
 {
-  "source": "Stellar Testnet transaction results read back via RPC during the demo run",
-  "generatedAt": "2026-10-24T19:54:05.397Z",
+  "source": "Stellar Testnet. feeChargedStroops and charged.* come from transaction results and meta read back via RPC; declared.* are the resource limits set from simulation (not metered consumption); envelopeBytes is computed locally.",
+  "generatedAt": "2026-10-24T21:57:26.657Z",
   "tools": {
     "node": "v22.13.1",
     "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
@@ -10,170 +10,226 @@
     "rpc": "30.0.0-13e53516633c3ce1281c7edbacb607107d3a4e55",
     "protocolVersion": 29
   },
-  "wasmSizeBytes": 16575,
+  "wasmSizeBytes": 17001,
   "operations": {
+    "upload AgentBatchPoC wasm": {
+      "hash": "c8b6acfc5dc3f14fc32666b679c1d8bd7e6c30c4ee9a3e60ccaa05b1cf57957c",
+      "feeChargedStroops": "43199",
+      "declared": {
+        "instructions": 16003048,
+        "diskReadBytes": 0,
+        "writeBytes": 0,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 0,
+        "resourceFee": "50957"
+      },
+      "simulatedMinResourceFee": "50957",
+      "charged": {
+        "nonRefundableResourceFee": "43001",
+        "refundableResourceFee": "98",
+        "rentFee": "0"
+      },
+      "contractEvents": 0,
+      "envelopeBytes": 17252
+    },
+    "deploy AgentBatchPoC (demo treasury)": {
+      "hash": "19ec6931528d0cd279262e0116c6ff2e11b178705a93e4e7c0eeff51f4cea30d",
+      "feeChargedStroops": "52060710",
+      "declared": {
+        "instructions": 1126504,
+        "diskReadBytes": 0,
+        "writeBytes": 552,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 1,
+        "resourceFee": "59873846"
+      },
+      "simulatedMinResourceFee": "59873846",
+      "charged": {
+        "nonRefundableResourceFee": "4390",
+        "refundableResourceFee": "52056220",
+        "rentFee": "52056122"
+      },
+      "contractEvents": 0,
+      "envelopeBytes": 904
+    },
     "demo: deposit 100 AUSD": {
-      "hash": "5611a8c2bcc3c4cded33cf96fbcfed067ec66a9b999870293e4cbbc9f173009a",
-      "feeChargedStroops": "4807743",
-      "instructions": 932398,
-      "diskReadBytes": 260,
-      "writeBytes": 892,
-      "readOnlyEntries": 3,
-      "readWriteEntries": 3,
-      "declaredResourceFee": "5532306",
-      "minResourceFee": "5532306",
-      "nonRefundableResourceFeeCharged": "8578",
-      "refundableResourceFeeCharged": "4799065",
-      "rentFeeCharged": "4797961",
+      "hash": "f9331e2b8efe11348582c0d4ceef4fec3ff576a2bdce5d99a67e01a84f0d0bee",
+      "feeChargedStroops": "21134785",
+      "declared": {
+        "instructions": 1012500,
+        "diskReadBytes": 260,
+        "writeBytes": 892,
+        "readOnlyEntries": 3,
+        "readWriteEntries": 3,
+        "resourceFee": "24308401"
+      },
+      "simulatedMinResourceFee": "24308401",
+      "charged": {
+        "nonRefundableResourceFee": "8602",
+        "refundableResourceFee": "21126083",
+        "rentFee": "21124979"
+      },
       "contractEvents": 2,
       "envelopeBytes": 896
     },
     "demo: open channel A (AI Inference API, 40 AUSD)": {
-      "hash": "60c23ea1bd4b7a698123594148357498099693cd3fe63aeebd4549b79a7f2935",
-      "feeChargedStroops": "8915421",
-      "instructions": 809992,
-      "diskReadBytes": 0,
-      "writeBytes": 968,
-      "readOnlyEntries": 1,
-      "readWriteEntries": 2,
-      "declaredResourceFee": "10256628",
-      "minResourceFee": "10256628",
-      "nonRefundableResourceFeeCharged": "5296",
-      "refundableResourceFeeCharged": "8910025",
-      "rentFeeCharged": "8909409",
+      "hash": "cde764fdd3641734be356edef1eeb19f575d987e559d14c75e0472e25bf64a20",
+      "feeChargedStroops": "39237024",
+      "declared": {
+        "instructions": 802077,
+        "diskReadBytes": 0,
+        "writeBytes": 968,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 2,
+        "resourceFee": "45126472"
+      },
+      "simulatedMinResourceFee": "45126472",
+      "charged": {
+        "nonRefundableResourceFee": "5294",
+        "refundableResourceFee": "39231630",
+        "rentFee": "39231014"
+      },
       "contractEvents": 1,
       "envelopeBytes": 708
     },
     "demo: redeem_batch (3 vouchers, 3 providers)": {
-      "hash": "a74cfdbdf645dcd8774addc06f0c4fb4bcb87a52dc45868828dd520e549bbf01",
-      "feeChargedStroops": "22296",
-      "instructions": 3309030,
-      "diskReadBytes": 348,
-      "writeBytes": 2372,
-      "readOnlyEntries": 2,
-      "readWriteEntries": 8,
-      "declaredResourceFee": "27572",
-      "minResourceFee": "27572",
-      "nonRefundableResourceFeeCharged": "18377",
-      "refundableResourceFeeCharged": "3819",
-      "rentFeeCharged": "0",
+      "hash": "cf74ff58182bfd6db9be07d3b0601191bd58f4b759172422a52d53d4b82dd2c2",
+      "feeChargedStroops": "22294",
+      "declared": {
+        "instructions": 3300527,
+        "diskReadBytes": 348,
+        "writeBytes": 2372,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 8,
+        "resourceFee": "27570"
+      },
+      "simulatedMinResourceFee": "27570",
+      "charged": {
+        "nonRefundableResourceFee": "18375",
+        "refundableResourceFee": "3819",
+        "rentFee": "0"
+      },
       "contractEvents": 7,
       "envelopeBytes": 1540
     },
     "demo: redeem_batch (provider A cumulative 17)": {
-      "hash": "69b4df37af799fe7bf959ae419b60bcbcc77eaa6ea968c0870a7e2c259f462ec",
-      "feeChargedStroops": "10968",
-      "instructions": 1595227,
-      "diskReadBytes": 116,
-      "writeBytes": 1308,
-      "readOnlyEntries": 2,
-      "readWriteEntries": 4,
-      "declaredResourceFee": "15904",
-      "minResourceFee": "15904",
-      "nonRefundableResourceFeeCharged": "9315",
-      "refundableResourceFeeCharged": "1553",
-      "rentFeeCharged": "0",
+      "hash": "8b707294e93897e3a5ca226ecc7de0767cd9bef299855a5ec6e6d3838a18f7e6",
+      "feeChargedStroops": "10966",
+      "declared": {
+        "instructions": 1587004,
+        "diskReadBytes": 116,
+        "writeBytes": 1308,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 4,
+        "resourceFee": "15902"
+      },
+      "simulatedMinResourceFee": "15902",
+      "charged": {
+        "nonRefundableResourceFee": "9313",
+        "refundableResourceFee": "1553",
+        "rentFee": "0"
+      },
       "contractEvents": 3,
       "envelopeBytes": 860
     },
-    "baseline: deposit 100 AUSD": {
-      "hash": "ff43cdef48f05c576624c654f961cce8dffe04bffdc8ceada5adcfd3d229c3ae",
-      "feeChargedStroops": "5631878",
-      "instructions": 932398,
-      "diskReadBytes": 260,
-      "writeBytes": 892,
-      "readOnlyEntries": 3,
-      "readWriteEntries": 3,
-      "declaredResourceFee": "6480061",
-      "minResourceFee": "6480061",
-      "nonRefundableResourceFeeCharged": "8578",
-      "refundableResourceFeeCharged": "5623200",
-      "rentFeeCharged": "5622096",
-      "contractEvents": 2,
-      "envelopeBytes": 896
-    },
-    "baseline: open channel A (AI Inference API, 40 AUSD)": {
-      "hash": "d693b415d653142a6cc55db97f311c462a4a643cec05c6ecb0f293157163c050",
-      "feeChargedStroops": "10445957",
-      "instructions": 809992,
-      "diskReadBytes": 0,
-      "writeBytes": 968,
-      "readOnlyEntries": 1,
-      "readWriteEntries": 2,
-      "declaredResourceFee": "12016745",
-      "minResourceFee": "12016745",
-      "nonRefundableResourceFeeCharged": "5296",
-      "refundableResourceFeeCharged": "10440561",
-      "rentFeeCharged": "10439945",
-      "contractEvents": 1,
-      "envelopeBytes": 708
-    },
     "baseline: redeem_batch (1 voucher, provider A)": {
-      "hash": "ada93c5c31ae24101d65ebd7726bdc38da2bf2e8e2d1b74dbade4cf10ea98e08",
-      "feeChargedStroops": "10968",
-      "instructions": 1595227,
-      "diskReadBytes": 116,
-      "writeBytes": 1308,
-      "readOnlyEntries": 2,
-      "readWriteEntries": 4,
-      "declaredResourceFee": "15904",
-      "minResourceFee": "15904",
-      "nonRefundableResourceFeeCharged": "9315",
-      "refundableResourceFeeCharged": "1553",
-      "rentFeeCharged": "0",
+      "hash": "9cec33bf35ea9464260833b4e5e4b54795cf0f513206983cee9dc54c6fcf05e1",
+      "feeChargedStroops": "10966",
+      "declared": {
+        "instructions": 1587004,
+        "diskReadBytes": 116,
+        "writeBytes": 1308,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 4,
+        "resourceFee": "15902"
+      },
+      "simulatedMinResourceFee": "15902",
+      "charged": {
+        "nonRefundableResourceFee": "9313",
+        "refundableResourceFee": "1553",
+        "rentFee": "0"
+      },
       "contractEvents": 3,
       "envelopeBytes": 860
     },
     "baseline: redeem_batch (1 voucher, provider B)": {
-      "hash": "d5722b38d1a925095328704be02ed2ec08196f463ecf5cf57efc74389e462ec4",
-      "feeChargedStroops": "10968",
-      "instructions": 1595227,
-      "diskReadBytes": 116,
-      "writeBytes": 1308,
-      "readOnlyEntries": 2,
-      "readWriteEntries": 4,
-      "declaredResourceFee": "15904",
-      "minResourceFee": "15904",
-      "nonRefundableResourceFeeCharged": "9315",
-      "refundableResourceFeeCharged": "1553",
-      "rentFeeCharged": "0",
+      "hash": "dd9ad1c7f0ac70ee5b315500d68bda6399d0f94df86915ee821018455c9ecc80",
+      "feeChargedStroops": "10966",
+      "declared": {
+        "instructions": 1587004,
+        "diskReadBytes": 116,
+        "writeBytes": 1308,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 4,
+        "resourceFee": "15902"
+      },
+      "simulatedMinResourceFee": "15902",
+      "charged": {
+        "nonRefundableResourceFee": "9313",
+        "refundableResourceFee": "1553",
+        "rentFee": "0"
+      },
       "contractEvents": 3,
       "envelopeBytes": 860
     },
     "baseline: redeem_batch (1 voucher, provider C)": {
-      "hash": "f72828e5b681c0763e99ea45047952818fb180235bd464a3a2aaf972eeed1921",
-      "feeChargedStroops": "10968",
-      "instructions": 1595227,
-      "diskReadBytes": 116,
-      "writeBytes": 1308,
-      "readOnlyEntries": 2,
-      "readWriteEntries": 4,
-      "declaredResourceFee": "15904",
-      "minResourceFee": "15904",
-      "nonRefundableResourceFeeCharged": "9315",
-      "refundableResourceFeeCharged": "1553",
-      "rentFeeCharged": "0",
+      "hash": "afd406a5b4dac102f7f66c7489ecb2e30a024fbb6084b287f7c9183a12e27648",
+      "feeChargedStroops": "10966",
+      "declared": {
+        "instructions": 1587004,
+        "diskReadBytes": 116,
+        "writeBytes": 1308,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 4,
+        "resourceFee": "15902"
+      },
+      "simulatedMinResourceFee": "15902",
+      "charged": {
+        "nonRefundableResourceFee": "9313",
+        "refundableResourceFee": "1553",
+        "rentFee": "0"
+      },
       "contractEvents": 3,
       "envelopeBytes": 860
+    },
+    "baseline: withdraw_available(10 AUSD)": {
+      "hash": "2ca6926ec2a6e08201667fb53f8c385bcf02df11800f27b042493b0c79b21fd8",
+      "feeChargedStroops": "8574",
+      "declared": {
+        "instructions": 919288,
+        "diskReadBytes": 116,
+        "writeBytes": 892,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 3,
+        "resourceFee": "13443"
+      },
+      "simulatedMinResourceFee": "13443",
+      "charged": {
+        "nonRefundableResourceFee": "7370",
+        "refundableResourceFee": "1104",
+        "rentFee": "0"
+      },
+      "contractEvents": 2,
+      "envelopeBytes": 716
     }
   },
   "comparison": {
     "baselineThreeTransactions": {
       "transactions": 3,
-      "feeChargedStroops": "32904",
-      "instructions": "4785681",
-      "diskReadBytes": "348",
-      "writeBytes": "3924",
+      "feeChargedStroops": "32898",
+      "declaredInstructions": "4761012",
+      "declaredDiskReadBytes": "348",
+      "declaredWriteBytes": "3924",
       "readOnlyEntries": "6",
       "readWriteEntries": "12",
       "envelopeBytes": "2580"
     },
     "agentBatchOneTransaction": {
       "transactions": 1,
-      "feeChargedStroops": "22296",
-      "instructions": "3309030",
-      "diskReadBytes": "348",
-      "writeBytes": "2372",
+      "feeChargedStroops": "22294",
+      "declaredInstructions": "3300527",
+      "declaredDiskReadBytes": "348",
+      "declaredWriteBytes": "2372",
       "readOnlyEntries": "2",
       "readWriteEntries": "8",
       "envelopeBytes": "1540"

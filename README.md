@@ -16,7 +16,7 @@ atomic transaction**.
 | Innovation | Demonstrated by |
 |---|---|
 | **Shared treasury funding**: one deposit funds several providers | 100 AUSD deposited once; three channels of 40 / 35 / 15 reserved from it |
-| **Independent virtual channels**: storage records with isolated collateral, no per-channel contracts | Over-allocation, cross-channel and withdrawal attacks rejected; each provider capped at its own reservation |
+| **Independent virtual channels**: storage records with isolated collateral, no per-channel contracts | On Testnet, 40 / 35 / 15 AUSD reserved from one 100 AUSD deposit in a single contract; over-allocation, cross-channel and reserved-withdrawal attacks rejected in the contract test suite |
 | **Batched multi-provider settlement**: independent vouchers settled atomically | One `redeem_batch` transaction paid 12 / 8 / 5 AUSD to three providers on Testnet |
 
 Results, transaction hashes and benchmarks: **[SCF_POC_EVIDENCE.md](SCF_POC_EVIDENCE.md)**.
@@ -52,19 +52,14 @@ See [docs/architecture.md](docs/architecture.md) and
 ## Quick start
 
 Requirements: Rust 1.94.1 with the `wasm32v1-none` target (pinned in
-`rust-toolchain.toml`), Stellar CLI 26.x, Node ≥ 22, pnpm 10.
+`rust-toolchain.toml`), Stellar CLI 26.x, Node ≥ 22.12, pnpm 10.
 
 ```bash
-# Contract: build the optimized WASM, then run all contract tests
-make build-contracts
-cargo test --workspace
+# Everything: install, format check, build, lint, contract and TypeScript tests
+make all
 
-# TypeScript: voucher utilities and tests
-pnpm install --frozen-lockfile
-pnpm -r build
-pnpm test
-
-# Testnet: deploy and run the full demonstration (writes deployments/testnet/)
+# Testnet: build the contract, deploy and run the full demonstration
+# (writes deployments/testnet/ and docs/benchmarks/testnet-resources.json)
 pnpm demo:testnet
 ```
 
@@ -82,8 +77,9 @@ tracked file.
 | [docs/accounting-invariants.md](docs/accounting-invariants.md) | Treasury invariants and how they are verified |
 | [docs/security-assumptions.md](docs/security-assumptions.md) | Threat model, trust assumptions, known limitations |
 | [docs/benchmarks.md](docs/benchmarks.md) | Testnet and local resource and fee measurements |
-| [docs/poc-spec-review.md](docs/poc-spec-review.md) | Pre-implementation review of the PoC brief |
-| [docs/audit-report.md](docs/audit-report.md) | Internal four-pass security review, findings and fixes |
+| [docs/poc-spec-review.md](docs/poc-spec-review.md) | Review of the PoC brief: interpretation decisions and how they were implemented |
+| [docs/review-findings.md](docs/review-findings.md) | Second internal review: every finding and fix, with regression tests |
+| [docs/audit-report.md](docs/audit-report.md) | First internal review (superseded by the second) |
 | [docs/vision.md](docs/vision.md) | Full product vision and roadmap |
 
 ## Scope

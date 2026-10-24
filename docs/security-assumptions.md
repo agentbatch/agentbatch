@@ -28,6 +28,18 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
 - Arithmetic is checked; negative and zero amounts are rejected.
 - A missing channel is an error; an archived channel is restored with its full
   state.
+- A deposit is credited only for the balance the contract actually received.
+- Contract error codes (101–113) cannot be confused with Stellar Asset
+  Contract error codes (1–15).
+
+## What the off-chain verifier guarantees
+
+- It accepts exactly the signatures the contract accepts, or fewer: it applies
+  the host's `verify_strict` rule and refuses channels with unsafe signer keys.
+- It never accepts a voucher above the allocation, at or below the highest
+  accepted or redeemed amount, or below the request price.
+- Its store is bound to one deployment and fails closed on missing, malformed,
+  duplicate or foreign data.
 
 ## Assumptions
 
