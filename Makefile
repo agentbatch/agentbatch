@@ -1,9 +1,13 @@
-.PHONY: all build build-contracts build-ts test test-contracts test-ts fmt fmt-check lint clean
+.PHONY: all install build build-contracts build-ts test test-contracts test-ts fmt fmt-check lint clean
 
-all: fmt-check lint test build
+all: install fmt-check build lint test
+
+install:
+	pnpm install --frozen-lockfile
 
 build: build-contracts build-ts
 
+# The exact artifact deployed to Testnet (hash recorded in deployments/testnet/manifest.json).
 build-contracts:
 	stellar contract build --optimize
 
@@ -12,10 +16,12 @@ build-ts:
 
 test: test-contracts test-ts
 
+# The WASM tests load the compiled contract, so it is rebuilt first.
 test-contracts: build-contracts
-	cargo test --workspace
+	cargo test --locked --workspace
 
 test-ts:
+	pnpm --filter @agentbatch/voucher build
 	pnpm test
 
 fmt:
@@ -24,8 +30,10 @@ fmt:
 fmt-check:
 	cargo fmt --all --check
 
+# The demo typechecks against @agentbatch/voucher's build output.
 lint:
-	cargo clippy --workspace --all-targets -- -D warnings
+	cargo clippy --locked --workspace --all-targets -- -D warnings
+	pnpm --filter @agentbatch/voucher build
 	pnpm typecheck
 
 clean:
