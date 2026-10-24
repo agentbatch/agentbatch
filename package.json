@@ -1,0 +1,21 @@
+{
+  "name": "agentbatch-monorepo",
+  "private": true,
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.19.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "demo:testnet": "pnpm -r build && pnpm --filter @agentbatch/demo testnet"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}
