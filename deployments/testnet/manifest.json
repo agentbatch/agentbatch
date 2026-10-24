@@ -1,0 +1,59 @@
+{
+  "network": "testnet",
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "rpcUrl": "https://soroban-testnet.stellar.org",
+  "generatedAt": "2026-10-24T19:54:05.397Z",
+  "asset": {
+    "code": "AUSD",
+    "issuer": "GC6BHRLAZ4V37PSIBHYLMQJQ3VTMRHGGZE7HF4KZLI64KU4AEQH6LVFA",
+    "sac": "CCIU2DJZIBZBUVXTHE2EUBQMJ3AZLOZNKQEQJK5HPIO4KIT4SMISAX2R",
+    "note": "Synthetic Testnet asset issued for this PoC. Not Circle USDC."
+  },
+  "contract": {
+    "name": "AgentBatchPoC",
+    "wasmHash": "f915e248eca5ab71ab87ae1fb4341d3951415b36cbc4e8ad90777b57c3c87863",
+    "wasmSizeBytes": 16575
+  },
+  "deployments": {
+    "demo": "CDFIKGAARDDTY2SBNHRH2BCUBA5BRHHRJ6CTL4WA2LLBTRWGJO6HZHG5",
+    "baseline": "CD7U3YVZ5S5OZXCXWNTZZPNR7MQPJKID272C7XZAGIU3J4BS2J3QA2VO"
+  },
+  "accounts": {
+    "issuer": "GC6BHRLAZ4V37PSIBHYLMQJQ3VTMRHGGZE7HF4KZLI64KU4AEQH6LVFA",
+    "owner": "GDW5EYOIPUMSIP6CUUS6THYL67I3SFSINSXMHHGSEIQP65BNPRV6FSGC",
+    "coordinator": "GACOEEIXYO7NSY2CNT5U3XFND2FQWZX2COT7Z5UDWJC6WSXMZPCZX5WP",
+    "providers": [
+      {
+        "name": "AI Inference API",
+        "address": "GDQ5ACVY7QBT7X2YQB4UZN4EMVFNXMCMFMWL7WEDU4RCG5U4AXJSOBRT"
+      },
+      {
+        "name": "AI Search API",
+        "address": "GBJBCYG4KKBQMD62TQPKAJ24S3RELL2LNAHWBHKIX6OGVTE5XY2GATOO"
+      },
+      {
+        "name": "Data Retrieval API",
+        "address": "GAGD5NWEVIU7RAL2NWFO2F4RKG5QO6YQ5PPRUAH44FO57H4GHYAA6HFN"
+      }
+    ],
+    "agentSignerPublicKeys": [
+      "314283b5616e2b00371c5c124795d99f98022c9ed2663cc9a5123435341b437d",
+      "da6e4c75b71bfec3fbc3d928faf6b47db2e3657bc417ff407a410a38c1e821dc",
+      "4a729cd9b7d491a6a9f9d179565189fdf378d1b081b47cd0599a9b6cdc00e25b"
+    ]
+  },
+  "channels": [
+    "1",
+    "2",
+    "3"
+  ],
+  "tools": {
+    "node": "v22.13.1",
+    "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+    "stellarCli": "stellar 26.0.0 (60f7458e7ecffddf2f2d91dc6d0d2db4fab03ecc)",
+    "sorobanSdk": "27.0.6",
+    "stellarSdkJs": "17.2.1",
+    "rpc": "30.0.0-13e53516633c3ce1281c7edbacb607107d3a4e55",
+    "protocolVersion": 29
+  }
+}
