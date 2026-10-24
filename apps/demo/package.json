@@ -1,0 +1,19 @@
+{
+  "name": "@agentbatch/demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AgentBatch PoC: Testnet deployment, three-provider simulation, batch settlement and benchmarks",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "testnet": "tsx src/cli.ts all",
+    "cli": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@agentbatch/voucher": "workspace:*",
+    "@stellar/stellar-sdk": "17.2.1"
+  }
+}
