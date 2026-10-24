@@ -19,6 +19,13 @@ fn snapshot(s: &Setup, ch: &ThreeChannels) -> (crate::TreasuryView, std::vec::Ve
     )
 }
 
+/// Asserts the batch fails at the host level and changes no state or balance.
+fn assert_rejected_unchanged(s: &Setup, ch: &ThreeChannels, v: Voucher) {
+    let before = snapshot(s, ch);
+    assert_fails!(s.client.try_redeem_batch(&s.batch(&[v])));
+    assert_eq!(snapshot(s, ch), before);
+}
+
 fn signed(s: &Setup, agent: &Agent, payload: &crate::VoucherPayload, channel_id: u64) -> Voucher {
     Voucher {
         channel_id,
@@ -77,7 +84,7 @@ fn signer_field_substitution_rejected() {
     let mut payload = s.payload(ch.ids[0], &ch.providers[0], &ch.agents[0], units(3));
     payload.signer = attacker.public(&s.env);
     let v = signed(&s, &attacker, &payload, ch.ids[0]);
-    assert_fails!(s.client.try_redeem_batch(&s.batch(&[v])));
+    assert_rejected_unchanged(&s, &ch, v);
 }
 
 #[test]
@@ -125,7 +132,7 @@ fn wrong_contract_rejected() {
     let mut payload = s.payload(ch.ids[0], &ch.providers[0], &ch.agents[0], units(3));
     payload.contract = Address::generate(&s.env);
     let v = signed(&s, &ch.agents[0], &payload, ch.ids[0]);
-    assert_fails!(s.client.try_redeem_batch(&s.batch(&[v])));
+    assert_rejected_unchanged(&s, &ch, v);
 }
 
 #[test]
@@ -161,7 +168,7 @@ fn wrong_network_rejected() {
     let mut payload = s.payload(ch.ids[0], &ch.providers[0], &ch.agents[0], units(3));
     payload.network = BytesN::from_array(&s.env, &[0xAB; 32]);
     let v = signed(&s, &ch.agents[0], &payload, ch.ids[0]);
-    assert_fails!(s.client.try_redeem_batch(&s.batch(&[v])));
+    assert_rejected_unchanged(&s, &ch, v);
 }
 
 #[test]
@@ -170,7 +177,7 @@ fn voucher_signed_for_testnet_rejected_on_other_network() {
     let v = s.voucher(ch.ids[0], &ch.providers[0], &ch.agents[0], units(3));
     // Same contract, same state; the ledger now reports a different network.
     s.env.ledger().set_network_id([0x42; 32]);
-    assert_fails!(s.client.try_redeem_batch(&s.batch(&[v])));
+    assert_rejected_unchanged(&s, &ch, v);
 }
 
 #[test]
@@ -179,7 +186,7 @@ fn wrong_domain_rejected() {
     let mut payload = s.payload(ch.ids[0], &ch.providers[0], &ch.agents[0], units(3));
     payload.domain = Symbol::new(&s.env, "AGENTBATCH_POC_V2");
     let v = signed(&s, &ch.agents[0], &payload, ch.ids[0]);
-    assert_fails!(s.client.try_redeem_batch(&s.batch(&[v])));
+    assert_rejected_unchanged(&s, &ch, v);
 }
 
 #[test]
@@ -188,7 +195,7 @@ fn wrong_owner_rejected() {
     let mut payload = s.payload(ch.ids[0], &ch.providers[0], &ch.agents[0], units(3));
     payload.owner = Address::generate(&s.env);
     let v = signed(&s, &ch.agents[0], &payload, ch.ids[0]);
-    assert_fails!(s.client.try_redeem_batch(&s.batch(&[v])));
+    assert_rejected_unchanged(&s, &ch, v);
 }
 
 #[test]
@@ -196,7 +203,7 @@ fn amount_substitution_rejected() {
     let (s, ch) = funded();
     let mut v = s.voucher(ch.ids[0], &ch.providers[0], &ch.agents[0], units(3));
     v.amount = units(30);
-    assert_fails!(s.client.try_redeem_batch(&s.batch(&[v])));
+    assert_rejected_unchanged(&s, &ch, v);
 }
 
 #[test]

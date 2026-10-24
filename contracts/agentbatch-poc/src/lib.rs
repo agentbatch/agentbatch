@@ -14,7 +14,8 @@
 //! - `total_deposited - total_paid - total_withdrawn == available + total_reserved`
 //! - per channel: `remaining = allocation - redeemed`, `0 <= redeemed <= allocation`
 //! - `sum(remaining) == total_reserved`
-//! - `token_balance >= available + total_reserved`
+//! - `token_balance >= available + total_reserved`, as long as the token's
+//!   issuer does not claw back the contract's balance
 #![no_std]
 
 mod error;
@@ -31,7 +32,9 @@ pub use crate::types::{Channel, ChannelView, Config, Treasury, TreasuryView, Vou
 pub use crate::voucher::DOMAIN;
 
 use crate::events::{BatchRedeemed, ChannelOpened, Deposited, VoucherRedeemed, Withdrawn};
-use crate::storage::{extend_instance, read_channel, read_config, read_treasury, write_channel, write_config, write_treasury};
+use crate::storage::{
+    create_channel, extend_instance, read_channel, read_config, read_treasury, write_channel, write_config, write_treasury,
+};
 
 /// Maximum number of vouchers accepted by one `redeem_batch` call.
 pub const MAX_BATCH_SIZE: u32 = 4;
@@ -53,9 +56,6 @@ impl AgentBatchPoC {
     /// - `owner`: required.
     pub fn __constructor(env: Env, owner: Address, token: Address) {
         owner.require_auth();
-        if token == owner || token == env.current_contract_address() {
-            soroban_sdk::panic_with_error!(&env, Error::InvalidToken);
-        }
         if token::Client::new(&env, &token).decimals() != TOKEN_DECIMALS {
             soroban_sdk::panic_with_error!(&env, Error::InvalidToken);
         }
@@ -87,7 +87,15 @@ impl AgentBatchPoC {
         write_treasury(&env, &treasury);
         extend_instance(&env);
 
-        token::Client::new(&env, &config.token).transfer(&config.owner, env.current_contract_address(), &amount);
+        // Credit only what actually arrives: a token that charges transfer
+        // fees or otherwise delivers less would break solvency.
+        let token = token::Client::new(&env, &config.token);
+        let contract = env.current_contract_address();
+        let before = token.balance(&contract);
+        token.transfer(&config.owner, &contract, &amount);
+        if token.balance(&contract) != add(before, amount)? {
+            return Err(Error::TransferMismatch);
+        }
 
         Deposited {
             owner: config.owner,
@@ -137,7 +145,7 @@ impl AgentBatchPoC {
             redeemed: 0,
             created_ledger: env.ledger().sequence(),
         };
-        write_channel(&env, &channel);
+        create_channel(&env, &channel);
         write_treasury(&env, &treasury);
         extend_instance(&env);
 

@@ -2,8 +2,11 @@
 //!
 //! Authorization model used in tests:
 //! - Treasury-owner and token-issuer authorization uses `mock_auths` with the
-//!   exact invocation tree (enforcing mode). `mock_all_auths` is never used,
-//!   so a missing or wrong `require_auth` makes the test fail.
+//!   exact invocation tree (enforcing mode), so a missing or wrong
+//!   `require_auth` makes the test fail. `mock_all_auths` appears only in two
+//!   places that are not negative authorization tests: the cross-language
+//!   vector fixture (channel setup by a G-account owner, which `mock_auths`
+//!   does not accept) and the positive constructor control test.
 //! - `Env::register` always mocks constructor authorization, so constructor
 //!   authorization is tested separately through a real `deploy_v2` of the
 //!   compiled WASM (see `auth.rs`).
@@ -27,11 +30,27 @@ macro_rules! assert_contract_err {
     };
 }
 
-/// Asserts that a `try_` call failed (host error, auth failure or crypto trap).
+/// Asserts that a `try_` call failed inside the Stellar Asset Contract with
+/// the given SAC error code (e.g. 10 = BalanceError, 11 = BalanceDeauthorizedError).
+macro_rules! assert_token_err {
+    ($res:expr, $code:expr) => {{
+        let res = $res;
+        assert!(
+            matches!(res, Err(Err(soroban_sdk::InvokeError::Contract(c))) if c == $code),
+            "expected SAC error #{}, got {:?}",
+            $code,
+            res
+        )
+    }};
+}
+
+/// Asserts that a `try_` call failed at the host level (authorization,
+/// Ed25519 verification or a token-contract error), not with one of this
+/// contract's error codes, so an unrelated contract error cannot satisfy it.
 macro_rules! assert_fails {
     ($res:expr) => {{
         let res = $res;
-        assert!(res.is_err(), "expected failure, got {:?}", res)
+        assert!(matches!(res, Err(Err(_))), "expected a host-level failure, got {:?}", res)
     }};
 }
 
@@ -39,6 +58,7 @@ mod accounting;
 mod auth;
 mod batch;
 mod bench;
+mod events;
 mod scenario;
 mod storage;
 mod vectors;

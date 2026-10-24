@@ -85,8 +85,10 @@ pub struct TreasuryView {
     pub next_channel_id: u64,
     /// Actual token balance held by the contract.
     pub token_balance: i128,
-    /// `token_balance - (available + total_reserved)`: tokens sent to the
-    /// contract outside `deposit`. Never credited to `available`.
+    /// `token_balance - (available + total_reserved)`. Positive: tokens sent to
+    /// the contract outside `deposit`, never credited to `available`.
+    /// Negative: a deficit, only possible if the issuer claws back the
+    /// contract's balance.
     pub unaccounted_balance: i128,
 }
 
