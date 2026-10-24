@@ -1,0 +1,22 @@
+[package]
+name = "agentbatch-poc"
+description = "AgentBatch PoC: shared treasury, virtual payment channels and atomic batch settlement on Soroban"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["lib", "cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+ed25519-dalek = "=2.2.0"
+hex = "=0.4.3"
+serde_json = "=1.0.154"
+sha2 = "=0.10.9"
