@@ -1,0 +1,29 @@
+# Rust
+/target/
+# Snapshots written by soroban-sdk test environments
+test_snapshots/
+**/*.rs.bk
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Stellar CLI local config — holds identities and secret keys. Never commit.
+.stellar/
+.soroban/
+
+# Secrets and local demo state (Testnet keys, provider voucher stores)
+.secrets/
+.state/
+.env
+.env.*
+!.env.example
+*.secret
+*.key
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
