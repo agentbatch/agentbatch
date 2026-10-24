@@ -36,6 +36,10 @@ export class AgentSigner {
  * Agent-side spending state for one channel: issues monotonically increasing
  * cumulative vouchers and never signs beyond the channel allocation.
  *
+ * `alreadyAuthorized` must be the highest cumulative amount this agent has
+ * ever signed on the channel (not merely the redeemed amount), or the next
+ * voucher will not exceed what the provider already holds.
+ *
  * PoC: one sequential signer per channel. Concurrent agent processes sharing
  * a key would need a single serialized counter.
  */
@@ -48,6 +52,8 @@ export class ChannelSpender {
     private readonly allocation: bigint,
     alreadyAuthorized = 0n,
   ) {
+    if (allocation <= 0n) throw new RangeError("allocation must be positive");
+    if (alreadyAuthorized < 0n || alreadyAuthorized > allocation) throw new RangeError("alreadyAuthorized must be within [0, allocation]");
     this.#cumulative = alreadyAuthorized;
   }
 
