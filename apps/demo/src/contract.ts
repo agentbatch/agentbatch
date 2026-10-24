@@ -1,5 +1,5 @@
 import type { ChannelInfo, SignedVoucher } from "@agentbatch/voucher";
-import { Address, Keypair, nativeToScVal, scValToNative, xdr } from "@stellar/stellar-sdk";
+import { Address, Keypair, nativeToScVal, rpc, scValToNative, xdr } from "@stellar/stellar-sdk";
 
 import type { Chain, TxRecord } from "./chain.js";
 
@@ -56,18 +56,44 @@ export class AgentBatchClient {
     return (await this.chain.soroban(label, owner, this.op("deposit", [i128(amount)]))).record;
   }
 
+  openOp(provider: string, signer: Uint8Array, allocation: bigint) {
+    return this.op("open_channel", [address(provider), xdr.ScVal.scvBytes(Buffer.from(signer)), i128(allocation)]);
+  }
+
   async openChannel(owner: Keypair, provider: string, signer: Uint8Array, allocation: bigint, label: string) {
-    const { record, returnValue } = await this.chain.soroban(
-      label,
-      owner,
-      this.op("open_channel", [address(provider), xdr.ScVal.scvBytes(Buffer.from(signer)), i128(allocation)]),
-    );
+    const { record, returnValue } = await this.chain.soroban(label, owner, this.openOp(provider, signer, allocation));
     return { record, channelId: BigInt(scValToNative(returnValue!) as bigint) };
   }
 
   async redeemBatch(submitter: Keypair, vouchers: SignedVoucher[], label: string) {
-    const { record, returnValue } = await this.chain.soroban(label, submitter, this.redeemOp(vouchers));
-    return { record, totalPaid: BigInt(scValToNative(returnValue!) as bigint) };
+    const { record, returnValue, data } = await this.chain.soroban(label, submitter, this.redeemOp(vouchers));
+    return { record, data, totalPaid: BigInt(scValToNative(returnValue!) as bigint) };
+  }
+
+  withdrawOp(amount: bigint) {
+    return this.op("withdraw_available", [i128(amount)]);
+  }
+
+  async withdraw(owner: Keypair, amount: bigint, label: string): Promise<TxRecord> {
+    return (await this.chain.soroban(label, owner, this.withdrawOp(amount))).record;
+  }
+
+  /**
+   * The channel's own ledger entry: contract data of this contract under
+   * `DataKey::Channel(id)` in persistent storage. Shows that a channel is a
+   * storage record of the shared contract, not a separate deployment.
+   */
+  async channelEntry(channelId: bigint) {
+    const key = xdr.ScVal.scvVec([xdr.ScVal.scvSymbol("Channel"), u64(channelId)]);
+    const entry = await this.chain.server.getContractData(this.contractId, key, rpc.Durability.Persistent);
+    return {
+      channelId,
+      contract: this.contractId,
+      key: "DataKey::Channel(" + channelId.toString() + ")",
+      durability: "persistent",
+      lastModifiedLedger: entry.lastModifiedLedgerSeq ?? null,
+      liveUntilLedger: entry.liveUntilLedgerSeq ?? null,
+    };
   }
 
   redeemOp(vouchers: SignedVoucher[]) {

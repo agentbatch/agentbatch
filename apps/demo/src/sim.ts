@@ -45,8 +45,9 @@ export class SimulatedProvider {
     readonly trusted: TrustedDeployment,
   ) {
     mkdirSync(PATHS.state, { recursive: true });
-    this.store = new FileVoucherStore(join(PATHS.state, `${storeName}.json`));
-    this.verifier = new ProviderVerifier({ networkPassphrase: NETWORK.passphrase, contract: contractId, provider: account.publicKey() }, this.store);
+    const scope = { networkPassphrase: NETWORK.passphrase, contract: contractId };
+    this.store = new FileVoucherStore(join(PATHS.state, `${storeName}.json`), scope, { create: true });
+    this.verifier = new ProviderVerifier({ ...scope, provider: account.publicKey() }, this.store);
   }
 
   /**
