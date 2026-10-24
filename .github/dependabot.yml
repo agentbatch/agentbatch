@@ -4,10 +4,21 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Pinned to the version compiled into the deployed WASM; an upgrade
+      # needs a new deployment and new Testnet evidence, not a bot PR.
+      - dependency-name: soroban-sdk
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+    groups:
+      stellar:
+        patterns: ["@stellar/*", "@noble/*"]
+    ignore:
+      # Runtime is Node 22; keep its type definitions on the same major.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
