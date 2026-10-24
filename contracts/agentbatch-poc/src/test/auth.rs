@@ -51,12 +51,30 @@ fn deploy_fixture() -> Deploy {
     }
 }
 
+/// Any constructor failure reaches the factory's caller as
+/// `Error(Context, InvalidAction)`, so the code alone does not identify an
+/// authorization failure. These tests are differential: they deploy exactly
+/// what `constructor_succeeds_when_owner_authorizes` deploys and differ from
+/// it only in the authorization supplied, so the failure is attributable to
+/// the constructor's `owner.require_auth()`.
+fn assert_constructor_auth_failed<T: core::fmt::Debug, C: core::fmt::Debug>(
+    res: Result<Result<T, C>, Result<soroban_sdk::Error, soroban_sdk::InvokeError>>,
+) {
+    let expected =
+        soroban_sdk::Error::from_type_and_code(soroban_sdk::xdr::ScErrorType::Context, soroban_sdk::xdr::ScErrorCode::InvalidAction);
+    assert!(
+        matches!(res, Err(Ok(e)) if e == expected),
+        "expected constructor auth failure, got {:?}",
+        res
+    );
+}
+
 #[test]
 fn constructor_without_owner_auth_fails() {
     let d = deploy_fixture();
     d.env.set_auths(&[]);
     let salt = BytesN::from_array(&d.env, &[1; 32]);
-    assert_fails!(d.factory.try_deploy(&d.hash, &salt, &d.owner, &d.token));
+    assert_constructor_auth_failed(d.factory.try_deploy(&d.hash, &salt, &d.owner, &d.token));
 }
 
 #[test]
@@ -78,7 +96,7 @@ fn constructor_with_other_address_auth_fails() {
             invoke: &invoke,
         }])
         .try_deploy(&d.hash, &salt, &d.owner, &d.token);
-    assert_fails!(res);
+    assert_constructor_auth_failed(res);
 }
 
 #[test]
@@ -106,7 +124,7 @@ impl SixDecimalToken {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #12)")]
+#[should_panic(expected = "Error(Contract, #112)")]
 fn constructor_rejects_non_seven_decimal_token() {
     let env = Env::default();
     Setup::with_env(env, 0, |env, owner, _token, contract| {
@@ -116,7 +134,7 @@ fn constructor_rejects_non_seven_decimal_token() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "trying to get non-existing value for contract instance")]
 fn constructor_rejects_non_contract_token() {
     let env = Env::default();
     Setup::with_env(env, 0, |env, owner, _token, contract| {
@@ -154,6 +172,22 @@ fn deposit_requires_owner() {
 
     // Attacker-signed deposit is rejected even though the attacker holds tokens.
     assert_fails!(s.try_deposit_as(&attacker, units(1)));
+    // The owner authorizes only the token transfer, as a standalone root.
+    // This succeeds if and only if `deposit` itself lacks `require_auth`.
+    let transfer_only = MockAuthInvoke {
+        contract: &s.token,
+        fn_name: "transfer",
+        args: (s.owner.clone(), s.contract.clone(), units(1)).into_val(&s.env),
+        sub_invokes: &[],
+    };
+    let res = s
+        .client
+        .mock_auths(&[MockAuth {
+            address: &s.owner,
+            invoke: &transfer_only,
+        }])
+        .try_deposit(&units(1));
+    assert_fails!(res);
     // No authorization at all.
     s.env.set_auths(&[]);
     assert_fails!(s.client.try_deposit(&units(1)));

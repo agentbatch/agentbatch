@@ -1,7 +1,7 @@
 //! Treasury accounting, collateral reservation and conservation invariants.
 
 use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{Address, BytesN};
+use soroban_sdk::{Address, BytesN, Env, IntoVal};
 
 use super::*;
 use crate::Error;
@@ -26,7 +26,7 @@ fn invalid_deposits_rejected() {
     assert_contract_err!(s.try_deposit_as(&s.owner, 0), Error::InvalidAmount);
     assert_contract_err!(s.try_deposit_as(&s.owner, -1), Error::InvalidAmount);
     // More than the owner holds: the token transfer fails, nothing is recorded.
-    assert_fails!(s.try_deposit_as(&s.owner, units(11)));
+    assert_token_err!(s.try_deposit_as(&s.owner, units(11)), 10); // BalanceError
     assert_eq!(s.client.get_treasury().total_deposited, 0);
     s.assert_invariants();
 }
@@ -314,4 +314,55 @@ fn run_random_sequence(seed: u64, steps: usize) {
         assert_eq!(s.balance(&s.owner), m.owner_balance);
         s.assert_invariants();
     }
+}
+
+/// A 7-decimal token that silently keeps 1 base unit of every transfer.
+#[soroban_sdk::contract]
+struct FeeOnTransferToken;
+
+#[soroban_sdk::contractimpl]
+impl FeeOnTransferToken {
+    pub fn decimals(_env: Env) -> u32 {
+        7
+    }
+
+    pub fn mint(env: Env, to: Address, amount: i128) {
+        let b: i128 = env.storage().persistent().get(&to).unwrap_or(0);
+        env.storage().persistent().set(&to, &(b + amount));
+    }
+
+    pub fn balance(env: Env, id: Address) -> i128 {
+        env.storage().persistent().get(&id).unwrap_or(0)
+    }
+
+    pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {
+        let f: i128 = env.storage().persistent().get(&from).unwrap_or(0);
+        let t: i128 = env.storage().persistent().get(&to).unwrap_or(0);
+        env.storage().persistent().set(&from, &(f - amount));
+        env.storage().persistent().set(&to, &(t + amount - 1));
+    }
+}
+
+#[test]
+fn deposit_credits_only_what_arrives() {
+    let env = Env::default();
+    let token = env.register(FeeOnTransferToken, ());
+    let owner = Address::generate(&env);
+    let contract = env.register(crate::AgentBatchPoC, (owner.clone(), token.clone()));
+    FeeOnTransferTokenClient::new(&env, &token).mint(&owner, &units(10));
+    let client = crate::AgentBatchPoCClient::new(&env, &contract);
+    let invoke = soroban_sdk::testutils::MockAuthInvoke {
+        contract: &contract,
+        fn_name: "deposit",
+        args: (units(1),).into_val(&env),
+        sub_invokes: &[],
+    };
+    let res = client
+        .mock_auths(&[soroban_sdk::testutils::MockAuth {
+            address: &owner,
+            invoke: &invoke,
+        }])
+        .try_deposit(&units(1));
+    assert_contract_err!(res, Error::TransferMismatch);
+    assert_eq!(client.get_treasury().total_deposited, 0);
 }

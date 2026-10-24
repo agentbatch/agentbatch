@@ -6,6 +6,7 @@ use soroban_sdk::testutils::Ledger as _;
 use super::*;
 use crate::storage::DAY_IN_LEDGERS;
 use crate::{DataKey, Error, TTL_EXTEND_TO, TTL_THRESHOLD};
+use soroban_sdk::Address;
 
 fn channel_ttl(s: &Setup, id: u64) -> u32 {
     s.env
@@ -96,4 +97,19 @@ fn missing_channel_is_an_error_not_an_empty_channel() {
     assert_contract_err!(s.client.try_voucher_message(&4, &1), Error::ChannelNotFound);
     let v = s.voucher(4, &ch.providers[0], &ch.agents[0], units(1));
     assert_contract_err!(s.client.try_redeem_batch(&s.batch(&[v])), Error::ChannelNotFound);
+}
+
+#[test]
+fn new_channel_gets_full_ttl_even_above_network_minimum() {
+    let s = Setup::new(units(100));
+    s.deposit(units(100));
+    // A network whose minimum persistent TTL already exceeds the threshold:
+    // a threshold-based extension alone would leave the channel at 10 days.
+    s.env.ledger().with_mut(|l| l.min_persistent_entry_ttl = 10 * DAY_IN_LEDGERS);
+    let id = s.open(
+        &<Address as soroban_sdk::testutils::Address>::generate(&s.env),
+        &Agent::numbered(9),
+        units(1),
+    );
+    assert_eq!(channel_ttl(&s, id), TTL_EXTEND_TO);
 }

@@ -110,7 +110,7 @@ fn failed_asset_transfer_reverts_whole_batch() {
 
     // Vouchers A and B are valid; C's transfer fails inside the token contract.
     let res = s.client.try_redeem_batch(&s.batch(&final_vouchers(&s, &ch)));
-    assert_fails!(res);
+    assert_token_err!(res, 11); // BalanceDeauthorizedError
     assert_eq!(snapshot(&s, &ch), before);
     assert_eq!(s.balance(&ch.providers[0]), 0);
     assert_eq!(s.balance(&ch.providers[1]), 0);
