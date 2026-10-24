@@ -1,0 +1,643 @@
+{
+  "manifest": {
+    "network": "testnet",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "rpcUrl": "https://soroban-testnet.stellar.org",
+    "generatedAt": "2026-10-24T19:54:05.397Z",
+    "asset": {
+      "code": "AUSD",
+      "issuer": "GC6BHRLAZ4V37PSIBHYLMQJQ3VTMRHGGZE7HF4KZLI64KU4AEQH6LVFA",
+      "sac": "CCIU2DJZIBZBUVXTHE2EUBQMJ3AZLOZNKQEQJK5HPIO4KIT4SMISAX2R",
+      "note": "Synthetic Testnet asset issued for this PoC. Not Circle USDC."
+    },
+    "contract": {
+      "name": "AgentBatchPoC",
+      "wasmHash": "f915e248eca5ab71ab87ae1fb4341d3951415b36cbc4e8ad90777b57c3c87863",
+      "wasmSizeBytes": 16575
+    },
+    "deployments": {
+      "demo": "CDFIKGAARDDTY2SBNHRH2BCUBA5BRHHRJ6CTL4WA2LLBTRWGJO6HZHG5",
+      "baseline": "CD7U3YVZ5S5OZXCXWNTZZPNR7MQPJKID272C7XZAGIU3J4BS2J3QA2VO"
+    },
+    "accounts": {
+      "issuer": "GC6BHRLAZ4V37PSIBHYLMQJQ3VTMRHGGZE7HF4KZLI64KU4AEQH6LVFA",
+      "owner": "GDW5EYOIPUMSIP6CUUS6THYL67I3SFSINSXMHHGSEIQP65BNPRV6FSGC",
+      "coordinator": "GACOEEIXYO7NSY2CNT5U3XFND2FQWZX2COT7Z5UDWJC6WSXMZPCZX5WP",
+      "providers": [
+        {
+          "name": "AI Inference API",
+          "address": "GDQ5ACVY7QBT7X2YQB4UZN4EMVFNXMCMFMWL7WEDU4RCG5U4AXJSOBRT"
+        },
+        {
+          "name": "AI Search API",
+          "address": "GBJBCYG4KKBQMD62TQPKAJ24S3RELL2LNAHWBHKIX6OGVTE5XY2GATOO"
+        },
+        {
+          "name": "Data Retrieval API",
+          "address": "GAGD5NWEVIU7RAL2NWFO2F4RKG5QO6YQ5PPRUAH44FO57H4GHYAA6HFN"
+        }
+      ],
+      "agentSignerPublicKeys": [
+        "314283b5616e2b00371c5c124795d99f98022c9ed2663cc9a5123435341b437d",
+        "da6e4c75b71bfec3fbc3d928faf6b47db2e3657bc417ff407a410a38c1e821dc",
+        "4a729cd9b7d491a6a9f9d179565189fdf378d1b081b47cd0599a9b6cdc00e25b"
+      ]
+    },
+    "channels": [
+      "1",
+      "2",
+      "3"
+    ],
+    "tools": {
+      "node": "v22.13.1",
+      "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+      "stellarCli": "stellar 26.0.0 (60f7458e7ecffddf2f2d91dc6d0d2db4fab03ecc)",
+      "sorobanSdk": "27.0.6",
+      "stellarSdkJs": "17.2.1",
+      "rpc": "30.0.0-13e53516633c3ce1281c7edbacb607107d3a4e55",
+      "protocolVersion": 29
+    }
+  },
+  "transactions": [
+    {
+      "label": "trustlines: owner and providers",
+      "hash": "cd466c0bb35e510698a99a1cba1569e89efaaf1a1bce74856f5999cb0d23eab6",
+      "ledger": 5369591,
+      "status": "SUCCESS",
+      "feeCharged": "400",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/cd466c0bb35e510698a99a1cba1569e89efaaf1a1bce74856f5999cb0d23eab6"
+    },
+    {
+      "label": "issue 200 AUSD to owner",
+      "hash": "c38dcd2de10721f9ce55d543d819ed3b9209c499ad3b0195b0a4901e58de2bd7",
+      "ledger": 5369592,
+      "status": "SUCCESS",
+      "feeCharged": "100",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/c38dcd2de10721f9ce55d543d819ed3b9209c499ad3b0195b0a4901e58de2bd7"
+    },
+    {
+      "label": "upload AgentBatchPoC wasm",
+      "hash": "318e4e52234eaa802fff898600e2f3c97bd818fe14922457717c48ac464e9040",
+      "ledger": 5369593,
+      "status": "SUCCESS",
+      "feeCharged": "42154",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/318e4e52234eaa802fff898600e2f3c97bd818fe14922457717c48ac464e9040",
+      "soroban": {
+        "instructions": 15629638,
+        "diskReadBytes": 0,
+        "writeBytes": 0,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 0,
+        "declaredResourceFee": "49819",
+        "minResourceFee": "49819",
+        "nonRefundableResourceFeeCharged": "41956",
+        "refundableResourceFeeCharged": "98",
+        "rentFeeCharged": "0",
+        "contractEvents": 0,
+        "envelopeBytes": 16824
+      }
+    },
+    {
+      "label": "deploy AgentBatchPoC (demo treasury)",
+      "hash": "56a33f81e804cc92555ceca6ce78fd25bd721748b197a79b73a26de1dd571bda",
+      "ledger": 5369594,
+      "status": "SUCCESS",
+      "feeCharged": "11826274",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/56a33f81e804cc92555ceca6ce78fd25bd721748b197a79b73a26de1dd571bda",
+      "soroban": {
+        "instructions": 1130788,
+        "diskReadBytes": 0,
+        "writeBytes": 552,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 1,
+        "declaredResourceFee": "13604245",
+        "minResourceFee": "13604245",
+        "nonRefundableResourceFeeCharged": "4392",
+        "refundableResourceFeeCharged": "11821782",
+        "rentFeeCharged": "11821684",
+        "contractEvents": 0,
+        "envelopeBytes": 904
+      }
+    },
+    {
+      "label": "deploy AgentBatchPoC (baseline treasury)",
+      "hash": "1b5271d6a7109347c4a5f17c24194034d9f9e0acc7fce4bb94bae928d66747fb",
+      "ledger": 5369595,
+      "status": "SUCCESS",
+      "feeCharged": "11826274",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/1b5271d6a7109347c4a5f17c24194034d9f9e0acc7fce4bb94bae928d66747fb",
+      "soroban": {
+        "instructions": 1130788,
+        "diskReadBytes": 0,
+        "writeBytes": 552,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 1,
+        "declaredResourceFee": "13604245",
+        "minResourceFee": "13604245",
+        "nonRefundableResourceFeeCharged": "4392",
+        "refundableResourceFeeCharged": "11821782",
+        "rentFeeCharged": "11821684",
+        "contractEvents": 0,
+        "envelopeBytes": 904
+      }
+    },
+    {
+      "label": "demo: deposit 100 AUSD",
+      "hash": "5611a8c2bcc3c4cded33cf96fbcfed067ec66a9b999870293e4cbbc9f173009a",
+      "ledger": 5369596,
+      "status": "SUCCESS",
+      "feeCharged": "4807743",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/5611a8c2bcc3c4cded33cf96fbcfed067ec66a9b999870293e4cbbc9f173009a",
+      "soroban": {
+        "instructions": 932398,
+        "diskReadBytes": 260,
+        "writeBytes": 892,
+        "readOnlyEntries": 3,
+        "readWriteEntries": 3,
+        "declaredResourceFee": "5532306",
+        "minResourceFee": "5532306",
+        "nonRefundableResourceFeeCharged": "8578",
+        "refundableResourceFeeCharged": "4799065",
+        "rentFeeCharged": "4797961",
+        "contractEvents": 2,
+        "envelopeBytes": 896
+      }
+    },
+    {
+      "label": "demo: open channel A (AI Inference API, 40 AUSD)",
+      "hash": "60c23ea1bd4b7a698123594148357498099693cd3fe63aeebd4549b79a7f2935",
+      "ledger": 5369597,
+      "status": "SUCCESS",
+      "feeCharged": "8915421",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/60c23ea1bd4b7a698123594148357498099693cd3fe63aeebd4549b79a7f2935",
+      "soroban": {
+        "instructions": 809992,
+        "diskReadBytes": 0,
+        "writeBytes": 968,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 2,
+        "declaredResourceFee": "10256628",
+        "minResourceFee": "10256628",
+        "nonRefundableResourceFeeCharged": "5296",
+        "refundableResourceFeeCharged": "8910025",
+        "rentFeeCharged": "8909409",
+        "contractEvents": 1,
+        "envelopeBytes": 708
+      }
+    },
+    {
+      "label": "demo: open channel B (AI Search API, 35 AUSD)",
+      "hash": "3874db61152bf2ec9234852c684f832510f3d116935586f798a563831b8c0f48",
+      "ledger": 5369598,
+      "status": "SUCCESS",
+      "feeCharged": "8915421",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/3874db61152bf2ec9234852c684f832510f3d116935586f798a563831b8c0f48",
+      "soroban": {
+        "instructions": 809992,
+        "diskReadBytes": 0,
+        "writeBytes": 968,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 2,
+        "declaredResourceFee": "10256628",
+        "minResourceFee": "10256628",
+        "nonRefundableResourceFeeCharged": "5296",
+        "refundableResourceFeeCharged": "8910025",
+        "rentFeeCharged": "8909409",
+        "contractEvents": 1,
+        "envelopeBytes": 708
+      }
+    },
+    {
+      "label": "demo: open channel C (Data Retrieval API, 15 AUSD)",
+      "hash": "1192d3aa4006dc13e89f8e748448fc7dfc1b1c1d02a02d24170b97c2a0655730",
+      "ledger": 5369599,
+      "status": "SUCCESS",
+      "feeCharged": "8915421",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/1192d3aa4006dc13e89f8e748448fc7dfc1b1c1d02a02d24170b97c2a0655730",
+      "soroban": {
+        "instructions": 809992,
+        "diskReadBytes": 0,
+        "writeBytes": 968,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 2,
+        "declaredResourceFee": "10256628",
+        "minResourceFee": "10256628",
+        "nonRefundableResourceFeeCharged": "5296",
+        "refundableResourceFeeCharged": "8910025",
+        "rentFeeCharged": "8909409",
+        "contractEvents": 1,
+        "envelopeBytes": 708
+      }
+    },
+    {
+      "label": "demo: redeem_batch (3 vouchers, 3 providers)",
+      "hash": "a74cfdbdf645dcd8774addc06f0c4fb4bcb87a52dc45868828dd520e549bbf01",
+      "ledger": 5369601,
+      "status": "SUCCESS",
+      "feeCharged": "22296",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/a74cfdbdf645dcd8774addc06f0c4fb4bcb87a52dc45868828dd520e549bbf01",
+      "soroban": {
+        "instructions": 3309030,
+        "diskReadBytes": 348,
+        "writeBytes": 2372,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 8,
+        "declaredResourceFee": "27572",
+        "minResourceFee": "27572",
+        "nonRefundableResourceFeeCharged": "18377",
+        "refundableResourceFeeCharged": "3819",
+        "rentFeeCharged": "0",
+        "contractEvents": 7,
+        "envelopeBytes": 1540
+      }
+    },
+    {
+      "label": "demo: redeem_batch (provider A cumulative 17)",
+      "hash": "69b4df37af799fe7bf959ae419b60bcbcc77eaa6ea968c0870a7e2c259f462ec",
+      "ledger": 5369603,
+      "status": "SUCCESS",
+      "feeCharged": "10968",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/69b4df37af799fe7bf959ae419b60bcbcc77eaa6ea968c0870a7e2c259f462ec",
+      "soroban": {
+        "instructions": 1595227,
+        "diskReadBytes": 116,
+        "writeBytes": 1308,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 4,
+        "declaredResourceFee": "15904",
+        "minResourceFee": "15904",
+        "nonRefundableResourceFeeCharged": "9315",
+        "refundableResourceFeeCharged": "1553",
+        "rentFeeCharged": "0",
+        "contractEvents": 3,
+        "envelopeBytes": 860
+      }
+    },
+    {
+      "label": "baseline: deposit 100 AUSD",
+      "hash": "ff43cdef48f05c576624c654f961cce8dffe04bffdc8ceada5adcfd3d229c3ae",
+      "ledger": 5369605,
+      "status": "SUCCESS",
+      "feeCharged": "5631878",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/ff43cdef48f05c576624c654f961cce8dffe04bffdc8ceada5adcfd3d229c3ae",
+      "soroban": {
+        "instructions": 932398,
+        "diskReadBytes": 260,
+        "writeBytes": 892,
+        "readOnlyEntries": 3,
+        "readWriteEntries": 3,
+        "declaredResourceFee": "6480061",
+        "minResourceFee": "6480061",
+        "nonRefundableResourceFeeCharged": "8578",
+        "refundableResourceFeeCharged": "5623200",
+        "rentFeeCharged": "5622096",
+        "contractEvents": 2,
+        "envelopeBytes": 896
+      }
+    },
+    {
+      "label": "baseline: open channel A (AI Inference API, 40 AUSD)",
+      "hash": "d693b415d653142a6cc55db97f311c462a4a643cec05c6ecb0f293157163c050",
+      "ledger": 5369606,
+      "status": "SUCCESS",
+      "feeCharged": "10445957",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/d693b415d653142a6cc55db97f311c462a4a643cec05c6ecb0f293157163c050",
+      "soroban": {
+        "instructions": 809992,
+        "diskReadBytes": 0,
+        "writeBytes": 968,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 2,
+        "declaredResourceFee": "12016745",
+        "minResourceFee": "12016745",
+        "nonRefundableResourceFeeCharged": "5296",
+        "refundableResourceFeeCharged": "10440561",
+        "rentFeeCharged": "10439945",
+        "contractEvents": 1,
+        "envelopeBytes": 708
+      }
+    },
+    {
+      "label": "baseline: open channel B (AI Search API, 35 AUSD)",
+      "hash": "5af4e08a8f6663c3d5d92a2063c49244f175c3f0e2bc931a5a29a65a5800e071",
+      "ledger": 5369607,
+      "status": "SUCCESS",
+      "feeCharged": "10445957",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/5af4e08a8f6663c3d5d92a2063c49244f175c3f0e2bc931a5a29a65a5800e071",
+      "soroban": {
+        "instructions": 809992,
+        "diskReadBytes": 0,
+        "writeBytes": 968,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 2,
+        "declaredResourceFee": "12016745",
+        "minResourceFee": "12016745",
+        "nonRefundableResourceFeeCharged": "5296",
+        "refundableResourceFeeCharged": "10440561",
+        "rentFeeCharged": "10439945",
+        "contractEvents": 1,
+        "envelopeBytes": 708
+      }
+    },
+    {
+      "label": "baseline: open channel C (Data Retrieval API, 15 AUSD)",
+      "hash": "44092a0d110423631b2154ed379b8ccbb69f810a1a0c43582005d427350a90a8",
+      "ledger": 5369608,
+      "status": "SUCCESS",
+      "feeCharged": "10445957",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/44092a0d110423631b2154ed379b8ccbb69f810a1a0c43582005d427350a90a8",
+      "soroban": {
+        "instructions": 809992,
+        "diskReadBytes": 0,
+        "writeBytes": 968,
+        "readOnlyEntries": 1,
+        "readWriteEntries": 2,
+        "declaredResourceFee": "12016745",
+        "minResourceFee": "12016745",
+        "nonRefundableResourceFeeCharged": "5296",
+        "refundableResourceFeeCharged": "10440561",
+        "rentFeeCharged": "10439945",
+        "contractEvents": 1,
+        "envelopeBytes": 708
+      }
+    },
+    {
+      "label": "baseline: redeem_batch (1 voucher, provider A)",
+      "hash": "ada93c5c31ae24101d65ebd7726bdc38da2bf2e8e2d1b74dbade4cf10ea98e08",
+      "ledger": 5369609,
+      "status": "SUCCESS",
+      "feeCharged": "10968",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/ada93c5c31ae24101d65ebd7726bdc38da2bf2e8e2d1b74dbade4cf10ea98e08",
+      "soroban": {
+        "instructions": 1595227,
+        "diskReadBytes": 116,
+        "writeBytes": 1308,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 4,
+        "declaredResourceFee": "15904",
+        "minResourceFee": "15904",
+        "nonRefundableResourceFeeCharged": "9315",
+        "refundableResourceFeeCharged": "1553",
+        "rentFeeCharged": "0",
+        "contractEvents": 3,
+        "envelopeBytes": 860
+      }
+    },
+    {
+      "label": "baseline: redeem_batch (1 voucher, provider B)",
+      "hash": "d5722b38d1a925095328704be02ed2ec08196f463ecf5cf57efc74389e462ec4",
+      "ledger": 5369610,
+      "status": "SUCCESS",
+      "feeCharged": "10968",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/d5722b38d1a925095328704be02ed2ec08196f463ecf5cf57efc74389e462ec4",
+      "soroban": {
+        "instructions": 1595227,
+        "diskReadBytes": 116,
+        "writeBytes": 1308,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 4,
+        "declaredResourceFee": "15904",
+        "minResourceFee": "15904",
+        "nonRefundableResourceFeeCharged": "9315",
+        "refundableResourceFeeCharged": "1553",
+        "rentFeeCharged": "0",
+        "contractEvents": 3,
+        "envelopeBytes": 860
+      }
+    },
+    {
+      "label": "baseline: redeem_batch (1 voucher, provider C)",
+      "hash": "f72828e5b681c0763e99ea45047952818fb180235bd464a3a2aaf972eeed1921",
+      "ledger": 5369611,
+      "status": "SUCCESS",
+      "feeCharged": "10968",
+      "explorer": "https://stellar.expert/explorer/testnet/tx/f72828e5b681c0763e99ea45047952818fb180235bd464a3a2aaf972eeed1921",
+      "soroban": {
+        "instructions": 1595227,
+        "diskReadBytes": 116,
+        "writeBytes": 1308,
+        "readOnlyEntries": 2,
+        "readWriteEntries": 4,
+        "declaredResourceFee": "15904",
+        "minResourceFee": "15904",
+        "nonRefundableResourceFeeCharged": "9315",
+        "refundableResourceFeeCharged": "1553",
+        "rentFeeCharged": "0",
+        "contractEvents": 3,
+        "envelopeBytes": 860
+      }
+    }
+  ],
+  "demo": {
+    "channelIds": [
+      "1",
+      "2",
+      "3"
+    ],
+    "requests": [
+      {
+        "provider": "AI Inference API",
+        "request": 1,
+        "price": "1.5 AUSD",
+        "cumulative": "1.5 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "AI Inference API",
+        "request": 2,
+        "price": "2.5 AUSD",
+        "cumulative": "4 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "AI Inference API",
+        "request": 3,
+        "price": "3 AUSD",
+        "cumulative": "7 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "AI Inference API",
+        "request": 4,
+        "price": "5 AUSD",
+        "cumulative": "12 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "AI Search API",
+        "request": 1,
+        "price": "0.75 AUSD",
+        "cumulative": "0.75 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "AI Search API",
+        "request": 2,
+        "price": "1.25 AUSD",
+        "cumulative": "2 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "AI Search API",
+        "request": 3,
+        "price": "2 AUSD",
+        "cumulative": "4 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "AI Search API",
+        "request": 4,
+        "price": "4 AUSD",
+        "cumulative": "8 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "Data Retrieval API",
+        "request": 1,
+        "price": "0.5 AUSD",
+        "cumulative": "0.5 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "Data Retrieval API",
+        "request": 2,
+        "price": "1.5 AUSD",
+        "cumulative": "2 AUSD",
+        "accepted": true
+      },
+      {
+        "provider": "Data Retrieval API",
+        "request": 3,
+        "price": "3 AUSD",
+        "cumulative": "5 AUSD",
+        "accepted": true
+      }
+    ],
+    "onchainTransactionsDuringSimulation": 0,
+    "offchainRejections": {
+      "replay": {
+        "ok": false,
+        "reason": "not-increasing"
+      },
+      "crossProvider": {
+        "ok": false,
+        "reason": "bad-signature"
+      },
+      "tampered": {
+        "ok": false,
+        "reason": "bad-signature"
+      }
+    },
+    "parity": {
+      "channelId": "1",
+      "amount": "30000000",
+      "bytes": 412,
+      "equal": true
+    },
+    "afterBatch": {
+      "treasury": {
+        "owner": "GDW5EYOIPUMSIP6CUUS6THYL67I3SFSINSXMHHGSEIQP65BNPRV6FSGC",
+        "token": "CCIU2DJZIBZBUVXTHE2EUBQMJ3AZLOZNKQEQJK5HPIO4KIT4SMISAX2R",
+        "totalDeposited": "1000000000",
+        "totalPaid": "250000000",
+        "totalWithdrawn": "0",
+        "available": "100000000",
+        "totalReserved": "650000000",
+        "nextChannelId": "4",
+        "tokenBalance": "750000000",
+        "unaccountedBalance": "0"
+      },
+      "providerPayouts": [
+        "120000000",
+        "80000000",
+        "50000000"
+      ],
+      "channels": [
+        {
+          "channelId": "1",
+          "owner": "GDW5EYOIPUMSIP6CUUS6THYL67I3SFSINSXMHHGSEIQP65BNPRV6FSGC",
+          "provider": "GDQ5ACVY7QBT7X2YQB4UZN4EMVFNXMCMFMWL7WEDU4RCG5U4AXJSOBRT",
+          "signer": "314283b5616e2b00371c5c124795d99f98022c9ed2663cc9a5123435341b437d",
+          "allocation": "400000000",
+          "redeemed": "120000000",
+          "remaining": "280000000",
+          "createdLedger": 5369597
+        },
+        {
+          "channelId": "2",
+          "owner": "GDW5EYOIPUMSIP6CUUS6THYL67I3SFSINSXMHHGSEIQP65BNPRV6FSGC",
+          "provider": "GBJBCYG4KKBQMD62TQPKAJ24S3RELL2LNAHWBHKIX6OGVTE5XY2GATOO",
+          "signer": "da6e4c75b71bfec3fbc3d928faf6b47db2e3657bc417ff407a410a38c1e821dc",
+          "allocation": "350000000",
+          "redeemed": "80000000",
+          "remaining": "270000000",
+          "createdLedger": 5369598
+        },
+        {
+          "channelId": "3",
+          "owner": "GDW5EYOIPUMSIP6CUUS6THYL67I3SFSINSXMHHGSEIQP65BNPRV6FSGC",
+          "provider": "GAGD5NWEVIU7RAL2NWFO2F4RKG5QO6YQ5PPRUAH44FO57H4GHYAA6HFN",
+          "signer": "4a729cd9b7d491a6a9f9d179565189fdf378d1b081b47cd0599a9b6cdc00e25b",
+          "allocation": "150000000",
+          "redeemed": "50000000",
+          "remaining": "100000000",
+          "createdLedger": 5369599
+        }
+      ]
+    },
+    "afterIncremental": {
+      "treasury": {
+        "owner": "GDW5EYOIPUMSIP6CUUS6THYL67I3SFSINSXMHHGSEIQP65BNPRV6FSGC",
+        "token": "CCIU2DJZIBZBUVXTHE2EUBQMJ3AZLOZNKQEQJK5HPIO4KIT4SMISAX2R",
+        "totalDeposited": "1000000000",
+        "totalPaid": "300000000",
+        "totalWithdrawn": "0",
+        "available": "100000000",
+        "totalReserved": "600000000",
+        "nextChannelId": "4",
+        "tokenBalance": "700000000",
+        "unaccountedBalance": "0"
+      },
+      "providerPayouts": [
+        "170000000",
+        "80000000",
+        "50000000"
+      ]
+    },
+    "replay": {
+      "cumulative17": "Error(Contract, #9)",
+      "originalBatch": "Error(Contract, #9)"
+    },
+    "batchTx": "a74cfdbdf645dcd8774addc06f0c4fb4bcb87a52dc45868828dd520e549bbf01",
+    "incrementalTx": "69b4df37af799fe7bf959ae419b60bcbcc77eaa6ea968c0870a7e2c259f462ec"
+  },
+  "benchmark": {
+    "comparison": {
+      "baselineThreeTransactions": {
+        "transactions": 3,
+        "feeChargedStroops": "32904",
+        "instructions": "4785681",
+        "diskReadBytes": "348",
+        "writeBytes": "3924",
+        "readOnlyEntries": "6",
+        "readWriteEntries": "12",
+        "envelopeBytes": "2580"
+      },
+      "agentBatchOneTransaction": {
+        "transactions": 1,
+        "feeChargedStroops": "22296",
+        "instructions": "3309030",
+        "diskReadBytes": "348",
+        "writeBytes": "2372",
+        "readOnlyEntries": "2",
+        "readWriteEntries": "8",
+        "envelopeBytes": "1540"
+      }
+    },
+    "baselineTxs": [
+      "ada93c5c31ae24101d65ebd7726bdc38da2bf2e8e2d1b74dbade4cf10ea98e08",
+      "d5722b38d1a925095328704be02ed2ec08196f463ecf5cf57efc74389e462ec4",
+      "f72828e5b681c0763e99ea45047952818fb180235bd464a3a2aaf972eeed1921"
+    ]
+  }
+}

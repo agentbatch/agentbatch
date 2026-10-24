@@ -1,0 +1,121 @@
+{
+  "comparison": {
+    "agentbatch_one_batch": {
+      "invocations": 1,
+      "totals": {
+        "contract_events_size_bytes": 1508,
+        "disk_read_bytes": 92,
+        "disk_read_entries": 1,
+        "instructions": 2913948,
+        "mem_bytes": 1385013,
+        "memory_read_entries": 10,
+        "persistent_entry_rent_bumps": 3,
+        "resource_fee_estimate_stroops": 3413416,
+        "write_bytes": 2668,
+        "write_entries": 8
+      }
+    },
+    "baseline_three_single_redemptions": {
+      "invocations": 3,
+      "per_invocation": [
+        {
+          "contract_events_size_bytes": 604,
+          "disk_read_bytes": 92,
+          "disk_read_entries": 1,
+          "instructions": 1346669,
+          "mem_bytes": 1284779,
+          "memory_read_entries": 6,
+          "persistent_entry_rent_bumps": 1,
+          "resource_fee_estimate_stroops": 1145491,
+          "write_bytes": 1404,
+          "write_entries": 4
+        },
+        {
+          "contract_events_size_bytes": 604,
+          "disk_read_bytes": 92,
+          "disk_read_entries": 1,
+          "instructions": 1341369,
+          "mem_bytes": 1285323,
+          "memory_read_entries": 6,
+          "persistent_entry_rent_bumps": 1,
+          "resource_fee_estimate_stroops": 1145487,
+          "write_bytes": 1404,
+          "write_entries": 4
+        },
+        {
+          "contract_events_size_bytes": 604,
+          "disk_read_bytes": 92,
+          "disk_read_entries": 1,
+          "instructions": 1345671,
+          "mem_bytes": 1285867,
+          "memory_read_entries": 6,
+          "persistent_entry_rent_bumps": 1,
+          "resource_fee_estimate_stroops": 1145490,
+          "write_bytes": 1404,
+          "write_entries": 4
+        }
+      ],
+      "totals": {
+        "disk_read_entries": 3,
+        "instructions": 4033709,
+        "resource_fee_estimate_stroops": 3436468,
+        "write_bytes": 4212,
+        "write_entries": 12
+      }
+    }
+  },
+  "notes": "Resource fee estimates exclude inclusion fees and transaction size; they use the SDK's Mainnet fee snapshot. Not a network-fee measurement.",
+  "operations": {
+    "deposit": {
+      "contract_events_size_bytes": 436,
+      "disk_read_bytes": 92,
+      "disk_read_entries": 1,
+      "instructions": 804331,
+      "mem_bytes": 1270580,
+      "memory_read_entries": 7,
+      "persistent_entry_rent_bumps": 1,
+      "resource_fee_estimate_stroops": 3338213,
+      "write_bytes": 1068,
+      "write_entries": 4
+    },
+    "open_channel_third": {
+      "contract_events_size_bytes": 236,
+      "disk_read_bytes": 0,
+      "disk_read_entries": 0,
+      "instructions": 686292,
+      "mem_bytes": 1254579,
+      "memory_read_entries": 5,
+      "persistent_entry_rent_bumps": 1,
+      "resource_fee_estimate_stroops": 4251453,
+      "write_bytes": 1028,
+      "write_entries": 3
+    },
+    "redeem_batch_three_vouchers": {
+      "contract_events_size_bytes": 1508,
+      "disk_read_bytes": 92,
+      "disk_read_entries": 1,
+      "instructions": 2913948,
+      "mem_bytes": 1385013,
+      "memory_read_entries": 10,
+      "persistent_entry_rent_bumps": 3,
+      "resource_fee_estimate_stroops": 3413416,
+      "write_bytes": 2668,
+      "write_entries": 8
+    },
+    "redeem_one_voucher": {
+      "contract_events_size_bytes": 604,
+      "disk_read_bytes": 92,
+      "disk_read_entries": 1,
+      "instructions": 1346669,
+      "mem_bytes": 1284779,
+      "memory_read_entries": 6,
+      "persistent_entry_rent_bumps": 1,
+      "resource_fee_estimate_stroops": 1145491,
+      "write_bytes": 1404,
+      "write_entries": 4
+    }
+  },
+  "soroban_sdk": "27.0.6",
+  "source": "soroban-sdk testutils invocation metering on compiled WASM (local, not Testnet)",
+  "wasm_size_bytes": 16575
+}
