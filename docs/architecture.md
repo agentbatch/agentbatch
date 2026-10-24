@@ -28,7 +28,7 @@ test-vectors/              Rust-generated vectors that the TypeScript tests must
 | Function | Auth | Effect |
 |---|---|---|
 | `__constructor(owner, token)` | `owner` | Binds owner and token permanently. Runs once, at deployment. Requires a 7-decimal token. |
-| `deposit(amount)` | owner | Transfers tokens from the owner; `available += amount`. |
+| `deposit(amount)` | owner | Transfers tokens from the owner; `available += amount`. Fails with `TransferMismatch` unless the contract's balance rose by exactly `amount`. |
 | `open_channel(provider, signer_key, allocation)` | owner | Moves `allocation` from `available` into a new channel reservation; returns the channel ID (1, 2, 3, …). |
 | `redeem_batch(vouchers)` | none | For 1–4 vouchers on distinct channels: verifies each, pays `amount − redeemed` to the stored provider. Atomic. |
 | `withdraw_available(amount)` | owner | Withdraws unallocated funds only. |
@@ -38,13 +38,18 @@ test-vectors/              Rust-generated vectors that the TypeScript tests must
 
 There is no initializer, setter, upgrade, close, revoke or rotate function.
 
+Error codes are 101–113 (`InvalidAmount` 101 … `TransferMismatch` 113; see
+[`error.rs`](../contracts/agentbatch-poc/src/error.rs)). They start above the
+Stellar Asset Contract's own codes (1–15), so a token failure inside a batch,
+such as `BalanceDeauthorizedError` (11), is never mistaken for a contract error.
+
 ## Storage
 
 | Data | Storage | Key | TTL policy |
 |---|---|---|---|
-| `Config { owner, token }` | instance | `DataKey::Config` | Extended (threshold 7 days, to 30 days) on every state-changing call; this also extends the contract code. |
+| `Config { owner, token }` | instance | `DataKey::Config` | On every state-changing call, extended back to 30 days if its TTL has fallen below 7 days. Only the instance is extended, never the shared WASM code entry. |
 | `Treasury { totals, next_channel_id }` | instance | `DataKey::Treasury` | Same as above. |
-| `Channel` | persistent, one entry per channel | `DataKey::Channel(u64)` | Extended to 30 days on open and on every redemption that touches it. |
+| `Channel` | persistent, one entry per channel | `DataKey::Channel(u64)` | At least 30 days on open, whatever the network minimum; on each redemption that touches it, extended back to 30 days if its TTL has fallen below 7 days. |
 
 Persistent entries are archived, never deleted, when their TTL lapses. Since
 protocol 23, transactions restore archived entries automatically, so an
@@ -57,6 +62,12 @@ contract function.
 
 The 30-day extension is the main cost of opening a channel (see
 [benchmarks](benchmarks.md)). It is a tunable constant (`TTL_EXTEND_TO`).
+
+The WASM code entry is shared by every deployment of the code and is by far
+the largest entry, so the contract never extends it: `instance().extend_ttl()`
+would make every call pay rent on 17 KB of code. The code's TTL is maintained
+separately with `ExtendFootprintTTLOp`; if it lapses, protocol 23+ restores it
+automatically on the next invocation.
 
 ## Settlement flow
 
@@ -92,30 +103,40 @@ transfers. A failure anywhere reverts everything.
 |---|---|---|---|
 | Channel representation | Persistent records in one contract | Shared funding with no per-provider deployment; this is the core claim | one-way-channel deploys one contract per funder–recipient pair |
 | Collateral | Explicit per-channel reservation from a shared pool | A provider's claim cannot be satisfied with another provider's funds | one-way-channel collateral is the channel contract's whole balance |
-| Voucher signature | Raw Ed25519 over XDR `ScMap`, verified with `ed25519_verify` | Long-lived cumulative commitments do not fit Soroban auth entries (nonces, expiry) | Same mechanism and encoding style as one-way-channel commitments and MPP |
+| Voucher signature | Raw Ed25519 over XDR `ScMap`, verified with `ed25519_verify` (ed25519-dalek `verify_strict`) | Long-lived cumulative commitments do not fit Soroban auth entries (nonces, expiry) | Same mechanism and encoding style as one-way-channel commitments and MPP |
 | Voucher fields | Adds `channel_id`, `owner`, `provider`, `signer` | Many channels share one contract address, so the channel must be bound explicitly | one-way-channel binds only domain, network, contract and amount |
 | Redemption auth | Permissionless; payout recipient comes from storage | A coordinator can settle many providers without collecting their signatures | one-way-channel `settle` requires `to.require_auth()` |
-| Stale voucher | Error (`StaleVoucher`), not a no-op | Makes replay attempts explicit; the spec requires rejection | one-way-channel transfers nothing and succeeds |
-| Over-allocation voucher | Error (`ExceedsAllocation`) | A provider can never be paid beyond its reservation | one-way-channel is bounded by the contract balance |
+| Stale voucher | Error (`StaleVoucher`, 109), not a no-op | Makes replay attempts explicit; the spec requires rejection | one-way-channel transfers nothing and succeeds |
+| Over-allocation voucher | Error (`ExceedsAllocation`, 110) | A provider can never be paid beyond its reservation | one-way-channel is bounded by the contract balance |
 | Batch size | 1–4, distinct channels | Bounded, measured resource use; duplicates rejected | — |
-| Token | Fixed at construction; 7 decimals required | Exact AUSD base-unit accounting | — |
+| Token | Fixed at construction; 7 decimals required; deposits credited only for the balance actually received | Exact AUSD base-unit accounting; a fee-on-transfer token cannot break solvency | — |
 | Unsolicited transfers | Never credited; reported as `unaccounted_balance` | `available` changes only through `deposit` | one-way-channel counts direct transfers as top-ups |
 | Upgradeability | None | Out of PoC scope; immutable code is simpler to review | — |
 
 ## Off-chain components
 
-- **`AgentSigner` / `ChannelSpender`** hold the agent's raw Ed25519 key and
-  issue strictly increasing cumulative vouchers. They refuse to sign beyond the
-  allocation. Agent keys are not Stellar accounts and hold no treasury rights.
-- **`ProviderVerifier`** accepts a voucher only if it was signed by the
-  registered signer for this provider's channel on the pinned contract and
-  network, stays within the allocation, exceeds the highest accepted or
-  redeemed amount, and covers the request price.
+- **`AgentSigner`** holds the agent's raw Ed25519 key and signs any amount;
+  **`ChannelSpender`** wraps it, issues strictly increasing cumulative
+  vouchers and refuses to sign beyond the allocation. Agent keys are not Stellar accounts and hold no treasury rights.
+- **`verifyStrict`** applies exactly the host's Ed25519 rule (canonical `s`,
+  no small-order `R` or key, cofactorless equation). A generic Ed25519 library
+  can accept signatures the contract rejects, so it is the only verifier used
+  for vouchers. Rust-generated vectors of host-rejected signatures keep the two
+  in agreement.
+- **`ProviderVerifier`** accepts a voucher only if the channel belongs to this
+  provider and its signer key is a safe prime-order point (`isSafeSignerKey`),
+  the signature passes `verifyStrict` over this provider's channel on the
+  pinned contract and network, the amount stays within the allocation, and it
+  exceeds the highest accepted or redeemed amount by at least the request
+  price. Its configuration and store deployment are validated when it is
+  constructed.
 - **`assertTrustedDeployment`**: before reading any channel, the provider
   checks that the contract's on-chain WASM hash and payment token match the
   pinned values.
-- **`FileVoucherStore`** keeps the highest accepted voucher per channel and
-  writes atomically through rename. Requests in the PoC are sequential;
+- **`FileVoucherStore`** keeps the highest accepted voucher per channel for
+  one deployment (network and contract are recorded in the file). Loading fails
+  closed on a missing, malformed, duplicate or foreign file. Each write is
+  fsynced and atomically renamed. Requests in the PoC are sequential;
   production needs an atomic compare-and-set store.
-- **Coordinator**: any funded account. It simulates `redeem_batch`, then
-  submits it. It holds no treasury rights.
+- **Coordinator**: any funded account. It simulates `redeem_batch` and submits
+  it only if simulation succeeds. It holds no treasury rights.

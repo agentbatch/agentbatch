@@ -8,13 +8,14 @@
 
 ```bash
 pnpm install --frozen-lockfile
-make all        # fmt check, clippy, contract + TS tests, builds
+make all        # install, fmt check, build, clippy + typecheck, contract + TS tests
 ```
 
 ## Rules for changes
 
 - **Contract changes** need tests. Authorization tests use enforcing
-  `mock_auths` with exact invocation trees, never `mock_all_auths`. Voucher
+  `mock_auths` with exact invocation trees; never use `mock_all_auths` in a
+  test that is meant to prove an authorization check. Voucher
   tests use real Ed25519 signatures. Constructor authorization must be tested
   through `deploy_v2`, because `Env::register` mocks constructor auth.
 - **Accounting changes** must keep every invariant in
