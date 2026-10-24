@@ -1,4 +1,4 @@
-import { Address, hash, nativeToScVal, xdr } from "@stellar/stellar-sdk";
+import { Address, hash, nativeToScVal, StrKey, xdr } from "@stellar/stellar-sdk";
 
 /** Signature-domain separator; must equal `DOMAIN` in the contract. */
 export const VOUCHER_DOMAIN = "AGENTBATCH_POC_V1";
@@ -38,6 +38,18 @@ export function networkId(networkPassphrase: string): Uint8Array {
   return hash(Buffer.from(networkPassphrase, "utf8"));
 }
 
+/** Throws unless `value` is a contract address (C...), the only kind the contract can be. */
+export function assertContract(field: string, value: string): void {
+  if (!StrKey.isValidContract(value)) throw new TypeError(`${field} must be a contract address (C...)`);
+}
+
+/** Throws unless `value` is an account (G...) or contract (C...) address. Muxed and other strkeys are rejected. */
+export function assertAccountOrContract(field: string, value: string): void {
+  if (!StrKey.isValidEd25519PublicKey(value) && !StrKey.isValidContract(value)) {
+    throw new TypeError(`${field} must be an account (G...) or contract (C...) address`);
+  }
+}
+
 /**
  * Builds the exact bytes the contract verifies: the XDR of an `ScVal::Map`
  * holding the `VoucherPayload` fields. Soroban maps are ordered by key, so the
@@ -48,6 +60,9 @@ export function encodeVoucherMessage(ctx: VoucherContext, amount: bigint): Uint8
   if (amount < I128_MIN || amount > I128_MAX) throw new RangeError("amount outside i128");
   if (ctx.channelId < 0n || ctx.channelId > U64_MAX) throw new RangeError("channelId outside u64");
   if (ctx.signer.length !== 32) throw new RangeError("signer must be a 32-byte Ed25519 public key");
+  assertContract("contract", ctx.contract);
+  assertAccountOrContract("owner", ctx.owner);
+  assertAccountOrContract("provider", ctx.provider);
 
   const entry = (key: string, val: xdr.ScVal) => new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol(key), val });
   return xdr.ScVal.scvMap([

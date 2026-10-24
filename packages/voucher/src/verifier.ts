@@ -1,22 +1,21 @@
-import { Keypair, StrKey } from "@stellar/stellar-sdk";
+import { StrKey } from "@stellar/stellar-sdk";
 
-import { encodeVoucherMessage, type SignedVoucher, type VoucherContext } from "./payload.js";
+import { isSafeSignerKey, verifyStrict } from "./ed25519.js";
+import { assertAccountOrContract, assertContract, encodeVoucherMessage, type SignedVoucher, type VoucherContext } from "./payload.js";
 import type { VoucherStore } from "./store.js";
 
-/** Returns true iff `signature` is a valid Ed25519 signature by `ctx.signer`. */
+/**
+ * Returns true iff `signature` by `ctx.signer` over the voucher message is
+ * accepted by the same rule as the contract (ed25519-dalek `verify_strict`,
+ * see {@link verifyStrict}).
+ */
 export function verifyVoucherSignature(ctx: VoucherContext, amount: bigint, signature: Uint8Array): boolean {
-  if (signature.length !== 64 || ctx.signer.length !== 32) return false;
-  try {
-    const key = Keypair.fromPublicKey(StrKey.encodeEd25519PublicKey(Buffer.from(ctx.signer)));
-    return key.verify(encodeVoucherMessage(ctx, amount), Buffer.from(signature));
-  } catch {
-    return false;
-  }
+  return verifyStrict(ctx.signer, encodeVoucherMessage(ctx, amount), signature);
 }
 
 /**
  * What a provider pins before trusting any channel data read from a contract:
- * the audited AgentBatchPoC code and the payment asset. Channel records read
+ * the reviewed AgentBatchPoC code and the payment asset. Channel records read
  * from an unpinned contract prove nothing; a look-alike contract could report
  * any allocation and never pay.
  */
@@ -27,9 +26,14 @@ export interface TrustedDeployment {
   token: string;
 }
 
+const HASH = /^[0-9a-f]{64}$/;
+
 /** Throws unless the observed contract code and token match the pinned values. */
 export function assertTrustedDeployment(observed: TrustedDeployment, expected: TrustedDeployment): void {
-  if (observed.wasmHash.toLowerCase() !== expected.wasmHash.toLowerCase()) {
+  if (!HASH.test(expected.wasmHash) || !StrKey.isValidContract(expected.token)) {
+    throw new Error("pinned deployment must be a lowercase 64-hex WASM hash and a C... token address");
+  }
+  if (observed.wasmHash.toLowerCase() !== expected.wasmHash) {
     throw new Error(`untrusted contract code: wasm ${observed.wasmHash} != pinned ${expected.wasmHash}`);
   }
   if (observed.token !== expected.token) {
@@ -58,6 +62,7 @@ export interface ProviderConfig {
 export type RejectReason =
   | "channel-mismatch"
   | "not-my-channel"
+  | "unsafe-signer-key"
   | "bad-signature"
   | "exceeds-allocation"
   | "not-increasing"
@@ -69,18 +74,29 @@ export type AcceptResult = { ok: true; increment: bigint; cumulative: bigint } |
  * Provider-side, off-chain voucher acceptance. No Soroban call per request:
  * channel state is read from Stellar once and passed in.
  *
- * A voucher is accepted only if it is signed by the channel's registered
- * signer over this provider's channel on the trusted contract and network,
- * stays within the allocation, and raises the highest accepted cumulative
- * amount by at least the request price. Because the contract reserves the
- * full allocation for the channel and the PoC has no withdrawal of reserved
- * collateral, every accepted voucher is fully collateralized.
+ * A voucher is accepted only if the channel belongs to this provider and its
+ * signer key is a safe (prime-order) Ed25519 key, the signature passes the
+ * contract's own verification rule over this provider's channel on the
+ * trusted contract and network, the amount stays within the allocation, and
+ * it raises the highest accepted or redeemed amount by at least the request
+ * price. The contract reserves the full allocation for the channel and the
+ * PoC cannot reduce it, so every accepted voucher is payable on redemption as
+ * long as the token transfer itself succeeds.
  */
 export class ProviderVerifier {
+  readonly #safeKeys = new Set<string>();
+
   constructor(
     private readonly config: ProviderConfig,
     private readonly store: VoucherStore,
-  ) {}
+  ) {
+    if (!config.networkPassphrase) throw new TypeError("networkPassphrase is required");
+    assertContract("contract", config.contract);
+    assertAccountOrContract("provider", config.provider);
+    if (store.scope.networkPassphrase !== config.networkPassphrase || store.scope.contract !== config.contract) {
+      throw new Error("voucher store belongs to a different deployment");
+    }
+  }
 
   context(channel: ChannelInfo): VoucherContext {
     return {
@@ -100,8 +116,10 @@ export class ProviderVerifier {
   }
 
   accept(channel: ChannelInfo, voucher: SignedVoucher, price: bigint): AcceptResult {
+    if (price <= 0n) throw new RangeError("price must be positive");
     if (voucher.channelId !== channel.channelId) return { ok: false, reason: "channel-mismatch" };
     if (channel.provider !== this.config.provider) return { ok: false, reason: "not-my-channel" };
+    if (!this.safeKey(channel.signer)) return { ok: false, reason: "unsafe-signer-key" };
     if (!verifyVoucherSignature(this.context(channel), voucher.amount, voucher.signature)) {
       return { ok: false, reason: "bad-signature" };
     }
@@ -113,5 +131,13 @@ export class ProviderVerifier {
 
     this.store.put(voucher);
     return { ok: true, increment, cumulative: voucher.amount };
+  }
+
+  private safeKey(key: Uint8Array): boolean {
+    const hex = Buffer.from(key).toString("hex");
+    if (this.#safeKeys.has(hex)) return true;
+    if (!isSafeSignerKey(key)) return false;
+    this.#safeKeys.add(hex);
+    return true;
   }
 }
