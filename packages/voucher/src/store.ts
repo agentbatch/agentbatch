@@ -1,4 +1,4 @@
-import { closeSync, fsyncSync, openSync, readFileSync, renameSync, writeSync } from "node:fs";
+import { closeSync, fsyncSync, openSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 import type { SignedVoucher } from "./payload.js";
@@ -28,6 +28,8 @@ export interface VoucherStore {
 }
 
 const copy = (v: SignedVoucher): SignedVoucher => ({ channelId: v.channelId, amount: v.amount, signature: Uint8Array.from(v.signature) });
+const U64_MAX = (1n << 64n) - 1n;
+const I128_MAX = (1n << 127n) - 1n;
 
 export class MemoryVoucherStore implements VoucherStore {
   protected readonly vouchers = new Map<bigint, SignedVoucher>();
@@ -41,6 +43,7 @@ export class MemoryVoucherStore implements VoucherStore {
 
   put(voucher: SignedVoucher): void {
     const v = copy(voucher);
+    if (v.channelId < 1n || v.channelId > U64_MAX || v.amount > I128_MAX) throw new RangeError("voucher outside channel u64 or amount i128 bounds");
     if (v.amount <= 0n || v.signature.length !== 64) throw new Error("store only accepts positive, signed vouchers");
     const current = this.vouchers.get(v.channelId);
     if (current && v.amount <= current.amount) throw new Error("store only accepts increasing vouchers");
@@ -63,10 +66,10 @@ const DECIMAL = /^(0|[1-9][0-9]*)$/;
 const SIGNATURE = /^[0-9a-f]{128}$/;
 
 /**
- * JSON-file store. Loading fails closed: a missing file is an error unless
- * `create` is set, and a malformed file, a record for another deployment, or a
- * duplicate channel throws instead of silently resetting what was accepted.
- * Each write is flushed to disk and atomically replaces the file.
+ * JSON-file store. Reopening fails closed on a missing file. `create: true`
+ * explicitly provisions a new store and refuses an existing path. Malformed,
+ * duplicate or foreign records throw instead of resetting accepted state.
+ * Writes are flushed to disk; updates atomically replace the existing file.
  */
 export class FileVoucherStore extends MemoryVoucherStore {
   constructor(
@@ -75,28 +78,31 @@ export class FileVoucherStore extends MemoryVoucherStore {
     options: { create?: boolean } = {},
   ) {
     super(scope);
-    let text: string;
-    try {
-      text = readFileSync(path, "utf8");
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT" && options.create) {
-        this.flush();
-        return;
-      }
-      throw err;
+    if (options.create) {
+      // Provision exactly once. Never silently reopen or overwrite another
+      // process's store, and never use provisioning as missing-state recovery.
+      this.writeAndSync(openSync(path, "wx", 0o600));
+      this.syncDirectory();
+      return;
     }
+    const text = readFileSync(path, "utf8");
     const file = JSON.parse(text) as Partial<StoreFile> | null;
     if (file === null || typeof file !== "object" || file.version !== 1 || !Array.isArray(file.vouchers)) throw new Error(`${path}: not a version 1 voucher store`);
     if (file.networkPassphrase !== scope.networkPassphrase || file.contract !== scope.contract) {
       throw new Error(`${path}: store belongs to ${file.contract} on "${file.networkPassphrase}", not ${scope.contract}`);
     }
     for (const r of file.vouchers) {
-      if (!DECIMAL.test(String(r?.channelId)) || !DECIMAL.test(String(r?.amount)) || !SIGNATURE.test(String(r?.signature))) {
+      if (typeof r?.channelId !== "string" || typeof r?.amount !== "string" || typeof r?.signature !== "string" ||
+          !DECIMAL.test(r.channelId) || !DECIMAL.test(r.amount) || !SIGNATURE.test(r.signature)) {
         throw new Error(`${path}: malformed voucher record ${JSON.stringify(r)}`);
       }
       const channelId = BigInt(r.channelId);
+      const amount = BigInt(r.amount);
+      if (channelId < 1n || channelId > U64_MAX || amount < 1n || amount > I128_MAX) {
+        throw new RangeError(`${path}: voucher outside channel u64 or amount i128 bounds`);
+      }
       if (this.vouchers.has(channelId)) throw new Error(`${path}: duplicate record for channel ${channelId}`);
-      super.put({ channelId, amount: BigInt(r.amount), signature: Buffer.from(r.signature, "hex") });
+      super.put({ channelId, amount, signature: Buffer.from(r.signature, "hex") });
     }
   }
 
@@ -105,7 +111,7 @@ export class FileVoucherStore extends MemoryVoucherStore {
     this.flush();
   }
 
-  private flush(): void {
+  private writeAndSync(fd: number): void {
     const file: StoreFile = {
       version: 1,
       networkPassphrase: this.scope.networkPassphrase,
@@ -116,15 +122,22 @@ export class FileVoucherStore extends MemoryVoucherStore {
         signature: Buffer.from(v.signature).toString("hex"),
       })),
     };
-    const tmp = `${this.path}.tmp`;
-    const fd = openSync(tmp, "w", 0o600);
     try {
-      writeSync(fd, JSON.stringify(file, null, 2) + "\n");
+      writeFileSync(fd, JSON.stringify(file, null, 2) + "\n");
       fsyncSync(fd);
     } finally {
       closeSync(fd);
     }
+  }
+
+  private flush(): void {
+    const tmp = `${this.path}.tmp`;
+    this.writeAndSync(openSync(tmp, "w", 0o600));
     renameSync(tmp, this.path);
+    this.syncDirectory();
+  }
+
+  private syncDirectory(): void {
     const dir = openSync(dirname(this.path), "r");
     try {
       fsyncSync(dir);

@@ -1,4 +1,4 @@
-//! The SCF demonstration scenario, end to end, with exact 7-decimal amounts.
+//! The PoC demonstration scenario, end to end, with exact 7-decimal amounts.
 
 use super::*;
 use crate::Error;
@@ -58,6 +58,6 @@ pub fn run(s: &Setup) {
 }
 
 #[test]
-fn scf_demo_scenario_native() {
+fn poc_demo_scenario_native() {
     run(&Setup::new(units(100)));
 }

@@ -7,6 +7,10 @@ decided. Each item links to the code or test that implements the decision.
 
 ## Environment findings
 
+These are historical observations from the 24 October 2026 implementation
+review. Version references here describe that environment, rather than current
+release recommendations.
+
 | # | Finding | Decision |
 |---|---|---|
 | E1 | Installed: rustc 1.94.1, stellar CLI 26.0.0, soroban-sdk 27.0.6 (local cache). The latest crates.io release was 29.0.1; Testnet runs protocol 29. | Kept **27.0.6**, following "no unnecessary upgrades". A contract built with SDK 27 runs on protocol 29, as the Testnet run confirms. |

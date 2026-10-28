@@ -116,5 +116,8 @@ Testnet.
 
 ```bash
 AGENTBATCH_WRITE_BENCH=1 cargo test --locked bench_resources -- --nocapture   # local
-pnpm demo:testnet                                                              # Testnet
+pnpm testnet:demo                                                              # Testnet
 ```
+
+Fresh Testnet measurements are written to `deployments/testnet/runs/<run-id>/benchmark.json`.
+The JSON measurements referenced above describe the dated historical run.

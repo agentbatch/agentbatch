@@ -5,8 +5,9 @@
 ## Scope
 
 - [ ] Contract (`contracts/`)
-- [ ] SDK (`packages/`)
-- [ ] Apps (`apps/`)
+- [ ] Libraries (`packages/`)
+- [ ] Operational tools (`tools/`)
+- [ ] Runnable examples (`examples/`)
 - [ ] Docs / tooling
 
 ## Security checklist (contract changes)

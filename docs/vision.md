@@ -3,30 +3,34 @@
 
 > This is the full product vision. The proof of concept in this repository
 > implements only the scope described in §15; everything else is planned work.
-> See [`../SCF_POC_EVIDENCE.md`](../SCF_POC_EVIDENCE.md) for what is demonstrated today.
+> See [archived Testnet records](../deployments/testnet/evidence.json) for what is demonstrated today.
 
 ### 1. Project Overview
 
-AgentBatch is open-source payment infrastructure built on Stellar that enables AI agents and organizations to manage high-frequency micropayments across multiple independent service providers using a shared USDC treasury.
+AgentBatch proposes an open-source Soroban layer where one organization-funded
+USDC escrow supports many AI agents across independent service providers.
+Stellar's [x402 `exact` implementation](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_stellar.md)
+settles individual payments on-chain; current
+[Stellar MPP one-way channels](https://github.com/stellar/stellar-mpp-sdk)
+allocate funds to a payer–provider relationship. Agent fleets need to coordinate
+frequent settlements and balances across those relationships.
 
-Instead of funding and deploying a separate payment channel for every provider, AgentBatch allows an organization to deposit USDC into a shared Soroban contract and allocate collateral to multiple virtual payment channels.
+AgentBatch's differentiation combines shared, reusable liquidity with virtual
+channels, independently reserved collateral, delegated signing and bounded
+multi-provider settlement. Each channel reserves its maximum liability. The
+production design targets per-agent and per-provider budgets across channels.
+Uncommitted or safely released funds can be reassigned internally without
+transferring USDC between separately deployed channel contracts.
 
-AI agents authorize payments by signing cumulative off-chain vouchers. Service providers verify these vouchers without requiring an on-chain transaction for each API request.
+Agents authorize requests with cumulative off-chain vouchers. Providers verify
+the payment increment before serving and redeem eligible claims in bounded
+on-chain batches. Planned closure starts a protected claim period before
+remaining eligible funds are released or refunded. A TypeScript SDK and explicit
+Stellar x402 batch-settlement integration would support compatible clients and
+facilitators.
 
-Providers periodically redeem their accumulated payment claims. Multiple independent channels can be settled together through a single Soroban transaction.
-
-AgentBatch combines:
-
-- Shared treasury and collateral management.
-- Multiple provider-isolated virtual payment channels.
-- Delegated AI-agent spending authority.
-- Off-chain signed cumulative micropayments.
-- Coordinated, atomic multi-provider settlement.
-- Open interfaces for existing AI-payment facilitators.
-
-**Core value proposition: One funded treasury, many independent provider channels, high-frequency off-chain payments, and coordinated on-chain settlement.**
-
-AgentBatch is designed as reusable settlement infrastructure rather than another competing x402 facilitator or AI application.
+The full design is intended to provide reusable settlement infrastructure that
+wallets, AI platforms and facilitators can integrate.
 
 ### 2. Vision
 
@@ -72,7 +76,7 @@ Independent providers typically redeem their channels separately. Coordinating m
 
 **Delegated spending risk**
 
-Organizations need to give agents bounded payment authority without granting unrestricted access to their treasury.
+Organizations need to give agents bounded payment authority without giving unrestricted access to their treasury.
 
 AgentBatch addresses these limitations while building on the established security model of cumulative payment vouchers.
 
@@ -184,6 +188,11 @@ Multiple channels can be opened from the same treasury without deploying or indi
 
 Each channel is financially isolated through explicit collateral reservations.
 
+Per-channel ceilings do not by themselves enforce a budget shared by several
+channels. Production per-agent and per-provider caps require aggregate exposure
+accounting across every relevant channel, with reservations and updates checked
+atomically. The current PoC implements per-channel allocation ceilings only.
+
 The system does not permit the same collateral to guarantee multiple independent payment obligations.
 
 #### 6.3 Off-Chain Cumulative Vouchers
@@ -292,6 +301,16 @@ Organizations can:
 - Export settlement history.
 
 The objective is to simplify treasury administration without introducing unsecured credit or reusing funds already committed to providers.
+
+The planned lifecycle is open → closing → claim period → released. Starting
+closure must define when providers stop accepting new vouchers and the deadline
+for presenting eligible existing claims. Providers, or authorized watchtowers,
+must monitor and submit claims within that window. Only collateral no longer
+needed under those rules may return to available funds or be refunded. A low
+on-chain redeemed amount does not establish that no unredeemed vouchers exist.
+The claim-window rules, concurrent redemption behavior and release accounting
+need an explicit specification, adversarial tests and security review before
+production use.
 
 ### 9. Ecosystem Integrations
 
@@ -489,7 +508,7 @@ Neither should be claimed as an existing guarantee of the base protocol.
 
 ### 15. Initial Proof of Concept — Intentionally Limited Scope
 
-Before applying for SCF #46 funding, the team intends to demonstrate the feasibility of AgentBatch's central settlement architecture.
+The implemented PoC demonstrates the feasibility of AgentBatch's central settlement architecture.
 
 **The PoC is not the complete product.**
 
@@ -511,11 +530,11 @@ The PoC intentionally excludes production channel closure, dynamic collateral re
 
 The objective is to demonstrate that the fundamental architecture works on Stellar and that the team has the engineering expertise to deliver the remaining infrastructure.
 
-### 16. Development Planned for SCF Funding
+### 16. Technical Roadmap
 
-The grant-funded work transforms the limited PoC into secure, scalable and reusable settlement infrastructure.
+The next development stages target reusable settlement infrastructure with a complete channel lifecycle and operational controls.
 
-#### Tranche 1 — Production Treasury and Channel Infrastructure
+#### Stage 1 — Production Treasury and Channel Infrastructure
 
 Develop:
 
@@ -527,7 +546,7 @@ Develop:
 - Revocation and challenge-period closure.
 - Expanded accounting and security tests.
 
-#### Tranche 2 — Scalable Settlement and Integration
+#### Stage 2 — Scalable Settlement and Integration
 
 Develop:
 
@@ -539,7 +558,7 @@ Develop:
 - Reproducible workload and fee benchmarks.
 - Comprehensive Testnet integration testing.
 
-#### Tranche 3 — Mainnet Readiness and Ecosystem Adoption
+#### Stage 3 — Mainnet Readiness and Ecosystem Adoption
 
 Develop:
 
@@ -551,9 +570,8 @@ Develop:
 - Mainnet deployment.
 - Public usage and settlement analytics.
 
-These are proposed workstreams; their budgets and acceptance criteria should be finalized after validating the PoC and engineering estimates.
+These are proposed workstreams. Each stage needs explicit technical acceptance criteria, security review and reproducible validation before release.
 
-The grant does not seek funding for functionality already completed before its award.
 
 ### 17. Success Criteria
 

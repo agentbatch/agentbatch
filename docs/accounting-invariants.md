@@ -6,6 +6,14 @@ functions is checked (`checked_add` / `checked_sub` → `ArithmeticOverflow`).
 Views use saturating arithmetic or bounded subtraction, and the release
 profile keeps `overflow-checks = true`.
 
+## Scope of the implemented limits
+
+The contract reserves and caps liability per channel. Aggregate budgets for an
+agent or provider across multiple channels belong to the full product design
+and are not enforced by this PoC. The PoC has no closure or reassignment path;
+unredeemed reservations remain locked. A future release mechanism must preserve
+eligible outstanding vouchers throughout its defined claim period.
+
 ## State
 
 | Field | Meaning | Changed by |
@@ -47,7 +55,7 @@ clawback).
 | Model-based randomized test: 5 seeds × 250 random deposits, channel openings, batches (valid, stale, over-ceiling), withdrawals and unsolicited transfers. Compares state with an independent model after every step and checks that failed steps changed nothing and paid no provider. | `accounting::randomized_transitions_preserve_invariants` |
 | Targeted tests for I5–I9 | `deposit_credits_only_what_arrives`, `over_allocation_rejected`, `channel_isolation`, `withdrawal_limited_to_unallocated_funds`, `cumulative_vouchers_pay_only_increment`, `unsolicited_transfers_are_not_credited`, `deposit_overflow_rejected` |
 | Atomicity (I10) | `batch::*_reverts_whole_batch`, `failed_asset_transfer_reverts_whole_batch`, `wasm::wasm_batch_failure_is_atomic` |
-| Testnet: I1 and I5 checked against `get_treasury` after the batch, after the incremental redemption and after the withdrawal; I6 and I7 attempted on-chain (rejected with `#102`) | `apps/demo/src/cli.ts` (`checkInvariants`) |
+| Testnet: I1 and I5 checked against `get_treasury` after the batch, after the incremental redemption and after the withdrawal; I6 and I7 attempted on-chain (rejected with `#102`) | `tools/testnet/src/support.ts` (`checkInvariants`) |
 
 ## Scenario values
 
@@ -58,6 +66,6 @@ clawback).
 | After cumulative 17 on channel A | 100 | 30 | 10 | 60 | 70 |
 
 These values are asserted by `scenario::run`
-(`test::scenario::scf_demo_scenario_native`, `test::wasm::scf_demo_scenario_wasm`)
+(`test::scenario::poc_demo_scenario_native`, `test::wasm::poc_demo_scenario_wasm`)
 and read back
-from Testnet in [`SCF_POC_EVIDENCE.md`](../SCF_POC_EVIDENCE.md).
+from Testnet in [archived Testnet records](../deployments/testnet/evidence.json).

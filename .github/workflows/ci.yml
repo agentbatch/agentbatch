@@ -42,7 +42,7 @@ jobs:
       - run: cargo test --locked --workspace
 
   typescript:
-    name: TypeScript packages
+    name: Libraries, tools, examples and archived evidence
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -52,6 +52,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @agentbatch/voucher build
       - run: pnpm typecheck
-      - run: pnpm test
+      - run: pnpm test:ts
+      - run: pnpm evidence:check
+      - run: pnpm example:offline

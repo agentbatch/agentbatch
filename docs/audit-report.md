@@ -143,7 +143,7 @@ settlement.
 
 **C-2 Locked funds (Low, accepted).** There is no close, reallocation or
 sweep, so unredeemed allocations and unsolicited tokens stay in the contract.
-This is intended for the PoC; closure with a challenge period is grant scope.
+This is intended for the PoC; closure with a challenge period is future protocol work.
 
 **C-3 Issuer powers (Low, documented).** Freezing or clawback by the issuer
 can block payouts or reduce the balance below liabilities. Contract accounting
@@ -158,7 +158,7 @@ requests could be accepted against the same previous amount.
 cost about 0.89–1.04 XLM, almost all of it rent for the 30-day TTL extension.
 Settlement paid no rent. `TTL_EXTEND_TO` is a tunable trade-off.
 
-## Audit D — Stellar integration and SCF evidence
+## Audit D — Stellar integration and execution evidence
 
 **D-1 Evidence over-counted on-chain transactions (Low, fixed).** The evidence
 field `onchainTransactionsDuringSimulation` was computed after settlement and

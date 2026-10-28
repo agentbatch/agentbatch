@@ -29,8 +29,8 @@ export interface DemoKeys {
 }
 
 /** Loads Testnet keys from the gitignored `.secrets/` file, creating them on first use. */
-export function loadOrCreateKeys(): DemoKeys {
-  if (!existsSync(PATHS.keys)) {
+export function loadOrCreateKeys(path = PATHS.keys): DemoKeys {
+  if (!existsSync(path)) {
     const file: KeyFile = {
       note: "Stellar Testnet keys for the AgentBatch PoC demo. Never use on Mainnet. Never commit.",
       issuer: Keypair.random().secret(),
@@ -39,10 +39,10 @@ export function loadOrCreateKeys(): DemoKeys {
       providers: [0, 1, 2].map(() => Keypair.random().secret()),
       agentSeeds: [0, 1, 2].map(() => randomBytes(32).toString("hex")),
     };
-    mkdirSync(dirname(PATHS.keys), { recursive: true, mode: 0o700 });
-    writeFileSync(PATHS.keys, JSON.stringify(file, null, 2) + "\n", { mode: 0o600 });
+    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+    writeFileSync(path, JSON.stringify(file, null, 2) + "\n", { mode: 0o600, flag: "wx" });
   }
-  const file = JSON.parse(readFileSync(PATHS.keys, "utf8")) as KeyFile;
+  const file = JSON.parse(readFileSync(path, "utf8")) as KeyFile;
   return {
     issuer: Keypair.fromSecret(file.issuer),
     owner: Keypair.fromSecret(file.owner),

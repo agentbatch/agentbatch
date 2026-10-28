@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased — Infrastructure layout and PoC audit follow-up
+
+- Moved the Testnet runner to `tools/testnet`, split its deployment, settlement,
+  benchmarking and reporting workflows, and isolated each run's evidence,
+  disposable keys and provider state.
+- Added `tools/evidence` with typed offline archive checks, read-only RPC
+  reconciliation and regression tests. Verification no longer rewrites
+  historical records.
+- Added a runnable offline example and component documentation. Root pnpm commands and Make aliases now cover all workspaces; CI
+  checks the tools, archives and example.
+- Updated technical documentation and preserved runtime contract behavior,
+  voucher encoding and the committed raw Testnet evidence.
+
+
+- Provider startup reopens an existing voucher store and fails on missing
+  state. First-time provisioning is explicit, exclusive, and used only for
+  the demo's newly deployed channels.
+- File stores require canonical decimal strings and the contract's positive
+  u64 channel / i128 amount bounds; memory stores enforce the same bounds.
+- Providers bind code, asset and channel reads to the same contract and chain
+  connection, check the network passphrase, and validate returned channel IDs
+  and providers before storing synchronized state.
+- Added provider restart, state-loss, deployment-binding and schema regression
+  tests; corrected the current evidence run's transaction count to 22.
+- Runtime contract logic, voucher format, dependency versions and historical
+  Testnet records are unchanged.
+
 ## 0.2.0 — 2026-10-25 — second internal review
 
 Every finding and fix is listed in [docs/review-findings.md](docs/review-findings.md).
@@ -30,7 +57,7 @@ Every finding and fix is listed in [docs/review-findings.md](docs/review-finding
   freshness, invalid-signature vectors, exact error assertions).
 - TypeScript: 93 tests.
 
-## 0.1.0 — 2026-10-24 — SCF #46 proof of concept
+## 0.1.0 — 2026-10-24 — proof of concept
 
 ### Added
 
@@ -48,5 +75,5 @@ Every finding and fix is listed in [docs/review-findings.md](docs/review-finding
   simulation, batch and incremental settlement, replay checks, and a
   batch-versus-separate benchmark.
 - Documentation: architecture, voucher format, invariants, security
-  assumptions, benchmarks, specification review, internal audit report, SCF
+  assumptions, benchmarks, specification review, internal audit report, execution
   evidence.

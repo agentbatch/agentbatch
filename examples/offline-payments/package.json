@@ -1,16 +1,14 @@
 {
-  "name": "@agentbatch/demo",
+  "name": "@agentbatch/example-offline",
   "version": "0.1.0",
   "private": true,
-  "description": "AgentBatch PoC: Testnet deployment, three-provider simulation, batch settlement and benchmarks",
   "license": "Apache-2.0",
+  "description": "Runnable offline cumulative-voucher integration example",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "testnet": "tsx src/cli.ts all",
-    "cli": "tsx src/cli.ts"
+    "start": "node --import tsx src/index.ts"
   },
   "dependencies": {
     "@agentbatch/voucher": "workspace:*",
