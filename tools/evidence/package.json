@@ -13,6 +13,6 @@
     "verify": "node --import tsx src/cli.ts verify"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "17.2.1"
+    "@stellar/stellar-sdk": "17.4.0"
   }
 }
