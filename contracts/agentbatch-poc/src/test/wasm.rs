@@ -42,7 +42,7 @@ fn wasm_artifact_is_newer_than_contract_sources() {
 }
 
 #[test]
-fn scf_demo_scenario_wasm() {
+fn poc_demo_scenario_wasm() {
     super::scenario::run(&wasm_setup(Env::default(), units(100)));
 }
 

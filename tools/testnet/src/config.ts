@@ -17,9 +17,6 @@ export const PATHS = {
   wasm: join(ROOT, "target/wasm32v1-none/release/agentbatch_poc.wasm"),
   keys: join(ROOT, ".secrets/testnet-keys.json"),
   state: join(ROOT, ".state"),
-  manifest: join(ROOT, "deployments/testnet/manifest.json"),
-  evidence: join(ROOT, "deployments/testnet/evidence.json"),
-  benchmark: join(ROOT, "docs/benchmarks/testnet-resources.json"),
 } as const;
 
 /** Synthetic Testnet-only asset. Not Circle USDC. */

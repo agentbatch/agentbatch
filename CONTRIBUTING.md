@@ -4,11 +4,12 @@
 
 - Rust toolchain from `rust-toolchain.toml` (1.94.1, `wasm32v1-none`)
 - Stellar CLI 26.x
-- Node ≥ 22 and pnpm 10 (`corepack enable`)
+- Node ≥ 22.12 and pnpm 10.19 (`corepack enable`)
 
 ```bash
 pnpm install --frozen-lockfile
-make all        # install, fmt check, build, clippy + typecheck, contract + TS tests
+pnpm build
+pnpm check      # format, lint, contract + TS tests, archive checks, offline example
 ```
 
 ## Rules for changes
@@ -24,11 +25,18 @@ make all        # install, fmt check, build, clippy + typecheck, contract + TS t
 - **Voucher format changes** require a new domain value, regenerated vectors
   (`AGENTBATCH_UPDATE_VECTORS=1 cargo test voucher_vectors`), and matching
   TypeScript changes.
-- **Evidence and benchmarks** must come from real runs. Never edit
-  `deployments/testnet/` or `docs/benchmarks/*.json` by hand.
+- **Evidence and benchmarks** must come from real runs. Preserve archived
+  transaction and measurement files; create a new run with `pnpm testnet:demo`.
+  The runner writes `deployments/testnet/runs/<run-id>/` and refuses reuse.
+  An optional local `deployments/testnet/index.json` can select a reviewed run.
 - **Secrets** must never be committed. Testnet keys live in `.secrets/`
   (gitignored).
 - Pin exact dependency versions.
+
+Follow the command reference in the
+[Testnet tooling](tools/testnet/README.md) and [evidence verifier](tools/evidence/README.md). Reusable protocol code belongs in
+`packages/`; deployment and audit commands belong in `tools/`; runnable
+integration examples belong in `examples/`.
 
 ## Commits and pull requests
 

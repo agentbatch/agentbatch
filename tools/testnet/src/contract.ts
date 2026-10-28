@@ -38,7 +38,7 @@ export function voucherScVal(v: SignedVoucher): xdr.ScVal {
 /** Typed calls to one AgentBatchPoC deployment. Reads are simulations; writes are transactions. */
 export class AgentBatchClient {
   constructor(
-    private readonly chain: Chain,
+    readonly chain: Chain,
     readonly contractId: string,
     /** Any funded account; used as the simulation source for reads. */
     private readonly reader: Keypair,

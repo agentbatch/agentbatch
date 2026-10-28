@@ -7,10 +7,21 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
-    "demo:testnet": "stellar contract build --optimize && pnpm -r build && pnpm --filter @agentbatch/demo testnet"
+    "build": "pnpm build:contracts && pnpm build:ts",
+    "build:contracts": "stellar contract build --optimize",
+    "build:ts": "pnpm -r build",
+    "typecheck": "pnpm --filter @agentbatch/voucher build && pnpm -r typecheck",
+    "format:check": "cargo fmt --all --check",
+    "lint": "cargo clippy --locked --workspace --all-targets -- -D warnings && pnpm typecheck",
+    "test": "pnpm test:contracts && pnpm test:ts",
+    "test:contracts": "pnpm build:contracts && cargo test --locked --workspace",
+    "test:ts": "pnpm --filter @agentbatch/voucher build && pnpm -r test",
+    "check": "pnpm format:check && pnpm lint && pnpm test && pnpm evidence:check && pnpm example:offline",
+    "testnet:demo": "pnpm build && pnpm --filter @agentbatch/testnet demo",
+    "demo:testnet": "pnpm testnet:demo",
+    "evidence:check": "pnpm --filter @agentbatch/evidence check",
+    "evidence:verify": "pnpm --filter @agentbatch/evidence verify",
+    "example:offline": "pnpm --filter @agentbatch/voucher build && pnpm --filter @agentbatch/example-offline start"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

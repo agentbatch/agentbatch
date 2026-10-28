@@ -7,7 +7,7 @@ independent external audit.**
 **Baseline reviewed:** commit `0bf42eb` (WASM `f915e248…`).
 **Result after fixes:** WASM `ab37537a6f65418bc968c4133ca9e9700d3980fd5a5915967e5914ce53068a04`,
 66 contract tests and 93 TypeScript tests passing, and a new Testnet run with
-all 34 checks passing ([`SCF_POC_EVIDENCE.md`](../SCF_POC_EVIDENCE.md)).
+all 34 checks passing ([archived Testnet records](../deployments/testnet/evidence.json)).
 
 | Pass | Area | Findings | Highest severity |
 |---|---|---:|---|
@@ -61,10 +61,12 @@ archival replay-protection test detects a switch to temporary storage.
 
 ## C. Testnet demo, build and CI
 
-The reviewer confirmed independently that both deployed contracts' on-chain
-WASM matched the manifest, that all 18 recorded transactions existed with the
-recorded fees, and that a clean rebuild at another path with the release
-stellar-cli 26.0.0 reproduced the hash.
+The original reviewer checked both deployed contracts' on-chain WASM against
+the manifest and reproduced the hash with a clean build at another path using
+stellar-cli 26.0.0. The subsequent follow-up PoC review reconfirmed all 22
+transactions in the current evidence run (19 successful and 3 failed), including
+their fees, through public Testnet RPC and Horizon. The earlier reference to
+18 transactions described an older review baseline.
 
 | ID | Sev. | Finding | Fix | Status |
 |---|---|---|---|---|
@@ -133,8 +135,70 @@ detail errors.
 
 - **Batch liveness:** one failing voucher reverts the whole batch (required by the specification).
 - **RPC trust:** providers trust their RPC endpoint for channel state.
-- **Agent keys:** proof of possession at `open_channel` is grant scope; providers already refuse unsafe keys off-chain.
-- **Locked funds:** unredeemed collateral and unsolicited tokens are locked, since closure is grant scope.
+- **Agent keys:** proof of possession at `open_channel` is future protocol work; providers already refuse unsafe keys off-chain.
+- **Locked funds:** unredeemed collateral and unsolicited tokens are locked, since closure is future protocol work.
 - **Issuer powers:** solvency depends on the asset issuer's freeze and clawback powers.
 - **Concurrency:** agent counters are not persisted, and provider stores are not concurrency-safe.
-- **CI not yet run:** the `contracts` CI job, including the reproducibility check, has not run, because the repository has no remote yet.
+- **Hosted CI:** check [GitHub Actions](https://github.com/agentbatch/agentbatch/actions) for results on the published revision; local validation is recorded separately.
+
+## PoC audit follow-up — 2026-10-25
+
+The subsequent internal review of `fe23cb8` verified the core PoC on public
+Testnet and identified four remaining provider or documentation findings.
+The following changes address those findings without changing the contract,
+voucher format, dependencies, or the historical deployment records. This is
+remediation verification, not an independent external security audit.
+
+| Finding | Severity | Correction | Regression evidence | Status |
+|---|---|---|---|---|
+| AB-M01: the demo silently recreated a missing provider store | Medium | Ordinary `SimulatedProvider` construction reopens an existing store and fails if it is missing. Fresh deployment setup explicitly sets `createStore: true`; file provisioning uses exclusive creation and refuses an existing path. | `provider storage lifecycle`: first-time provisioning, ordinary restart replay refusal, and missing-store refusal after an accepted unredeemed voucher; file-store exclusive provisioning test | Fixed |
+| AB-L01: stored voucher integers allowed wrong JSON types and exceeded contract bounds | Low | Require canonical decimal strings; channel IDs must be in `1..=u64::MAX`, amounts in `1..=i128::MAX`. Memory-store writes enforce the same bounds. | Numeric, rounded-number, null, object, array, zero, leading-zero and overflow file cases; memory-store bounds; maximum-value round trip | Fixed |
+| AB-L02: pinned contract code and channel reads could use different clients | Low | Reject a different client contract or chain connection before any RPC call; check the network passphrase; validate the returned channel ID and provider before publishing synchronized state. | `provider deployment binding`: wrong contract, connection, network, code, token, channel and provider; successful requests need no per-request RPC | Fixed |
+| AB-I01: the review's 18-transaction count was ambiguous | Informational | Distinguish the earlier review baseline from the current evidence run's 22 transactions (19 successful, 3 failed). | Current manifest/evidence inspection and the preceding public RPC/Horizon reconciliation | Fixed |
+
+Reopening an existing provider must omit `createStore`. Explicit provisioning
+is only for a channel that has never served a request. If accepted-voucher
+history is lost, recover it before resuming service: the on-chain redeemed
+amount cannot reconstruct outstanding unredeemed claims. The PoC still assumes
+one sequential provider process and one sequential agent signer per channel;
+distributed persistence and durable agent counters remain disclosed production
+work.
+
+Validation commands:
+
+```bash
+pnpm --filter @agentbatch/voucher build
+pnpm typecheck
+pnpm test
+stellar contract build --optimize
+cargo fmt --all --check
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo test --locked --workspace
+```
+
+The regression suite contains 113 voucher-package tests and 11 demo-provider
+tests (124 TypeScript tests in total); the contract suite contains 66 tests.
+The optimized contract remains 17,001 bytes with SHA-256
+`ab37537a6f65418bc968c4133ca9e9700d3980fd5a5915967e5914ce53068a04`.
+
+The committed [original Testnet archive](../deployments/testnet/evidence.json)
+contains the transaction envelopes, results and metadata used by the offline
+verifier. Fresh reproduction writes separate run directories.
+
+## Repository structure validation — 2026-10-25
+
+Operational code now lives in `tools/testnet`; reusable voucher code remains in
+`packages/voucher`. The standalone `tools/evidence` workspace validates public
+records without deployment code or private keys. `examples/offline-payments`
+demonstrates the library without network access. See the [Testnet tooling](../tools/testnet/README.md) for commands.
+
+New Testnet runs reserve unique directories and use isolated disposable keys
+and provider state. Artifact writes refuse existing paths, completion is marked
+last, and interrupted runs are excluded from automatic archive discovery.
+An optional local run index selects another reviewed archive explicitly. Live verification
+writes only to a new optional destination and never refreshes an archive in place.
+
+Run `pnpm check` to reproduce format, Clippy, type checking, contract and
+TypeScript tests, offline archive checks and the offline example. The contract
+suite contains 66 tests. Additional tests cover provider persistence, deployment
+binding, write-once runs, archive selection and tamper rejection.

@@ -1,41 +1,40 @@
 .PHONY: all install build build-contracts build-ts test test-contracts test-ts fmt fmt-check lint clean
 
-all: install fmt-check build lint test
+# package.json owns command definitions; Make remains a convenient front door.
+all: install
+	pnpm build
+	pnpm check
 
 install:
 	pnpm install --frozen-lockfile
 
-build: build-contracts build-ts
-
-# The exact artifact deployed to Testnet (hash recorded in deployments/testnet/manifest.json).
-build-contracts:
-	stellar contract build --optimize
-
-build-ts:
+build:
 	pnpm build
 
-test: test-contracts test-ts
+build-contracts:
+	pnpm build:contracts
 
-# The WASM tests load the compiled contract, so it is rebuilt first.
-test-contracts: build-contracts
-	cargo test --locked --workspace
+build-ts:
+	pnpm build:ts
+
+test:
+	pnpm test
+
+test-contracts:
+	pnpm test:contracts
 
 test-ts:
-	pnpm --filter @agentbatch/voucher build
-	pnpm test
+	pnpm test:ts
 
 fmt:
 	cargo fmt --all
 
 fmt-check:
-	cargo fmt --all --check
+	pnpm format:check
 
-# The demo typechecks against @agentbatch/voucher's build output.
 lint:
-	cargo clippy --locked --workspace --all-targets -- -D warnings
-	pnpm --filter @agentbatch/voucher build
-	pnpm typecheck
+	pnpm lint
 
 clean:
 	cargo clean
-	rm -rf packages/*/dist apps/*/dist
+	rm -rf packages/*/dist tools/*/dist examples/*/dist

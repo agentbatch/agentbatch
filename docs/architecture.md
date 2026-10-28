@@ -10,18 +10,31 @@ The PoC proves three things on Stellar Testnet:
    different providers settle atomically in one transaction.
 
 Anything beyond that (closure, revocation, rotation, reallocation,
-multi-tenancy, adapters, console) is reserved for the grant-funded roadmap.
+multi-tenancy, adapters, console) is reserved for the technical roadmap.
+
+## Relationship to the full design
+
+The [product vision](vision.md) targets reusable USDC liquidity, aggregate
+per-agent/per-provider budgets, protected channel closure, safe release and
+reassignment, and explicit x402 integration. This document describes the limited
+implementation. Its caps apply per channel; it has no aggregate agent/provider
+budget registry, close/claim-period state machine or collateral release path.
+Unallocated funds can be withdrawn; unredeemed channel reservations stay locked.
 
 ## Components
 
 ```text
-contracts/agentbatch-poc   Soroban contract AgentBatchPoC (Rust, no_std)
-packages/voucher           @agentbatch/voucher: voucher encoding, agent signing,
-                           provider verification, highest-voucher store
-apps/demo                  Testnet runner: asset issuance, deployment, three-provider
-                           simulation, batch settlement, benchmarks, evidence
-test-vectors/              Rust-generated vectors that the TypeScript tests must match
+contracts/agentbatch-poc/    Soroban contract and native/WASM tests
+packages/voucher/           Reusable voucher encoding, signing, verification and stores
+tools/testnet/              Disposable deployment, provider simulation and benchmarks
+tools/evidence/             Offline archive checks and read-only network verification
+examples/offline-payments/  Runnable signing and verification example
+test-vectors/              Cross-language protocol compatibility fixtures
+deployments/testnet/        Original public archive and isolated new runs
 ```
+
+See the [Testnet tooling](../tools/testnet/README.md) for commands and run isolation. The voucher library does not depend on operational tools; the
+evidence verifier does not load private keys or import the deployment runner.
 
 ## Contract interface
 
@@ -132,11 +145,20 @@ transfers. A failure anywhere reverts everything.
   constructed.
 - **`assertTrustedDeployment`**: before reading any channel, the provider
   checks that the contract's on-chain WASM hash and payment token match the
-  pinned values.
+  pinned values. The demo also requires the client to use the same contract
+  and chain connection, checks the RPC network passphrase, and checks the
+  returned channel ID before accepting its state.
 - **`FileVoucherStore`** keeps the highest accepted voucher per channel for
   one deployment (network and contract are recorded in the file). Loading fails
-  closed on a missing, malformed, duplicate or foreign file. Each write is
-  fsynced and atomically renamed. Requests in the PoC are sequential;
+  closed on a missing, malformed, duplicate or foreign file. Records require
+  canonical decimal strings, channel IDs in `1..=u64::MAX`, positive amounts
+  no greater than `i128::MAX`, and 64-byte hexadecimal signatures.
+  `{ create: true }` provisions a new store exclusively and refuses an existing
+  path. Normal provider startup reopens an existing store; the demo explicitly
+  provisions stores only for the fresh deployments created by that run.
+  Missing state must be recovered from accepted-voucher history before serving
+  requests; on-chain redeemed alone cannot reconstruct unredeemed claims.
+  Updates are fsynced and atomically renamed. Requests in the PoC are sequential;
   production needs an atomic compare-and-set store.
 - **Coordinator**: any funded account. It simulates `redeem_batch` and submits
   it only if simulation succeeds. It holds no treasury rights.

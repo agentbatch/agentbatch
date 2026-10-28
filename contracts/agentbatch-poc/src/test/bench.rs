@@ -2,7 +2,7 @@
 //!
 //! Uses the host's invocation metering (`env.cost_estimate()`). Fee figures
 //! use the SDK's hardcoded Mainnet fee snapshot and exclude the inclusion fee
-//! and transaction-size fees; Testnet figures come from `apps/demo`.
+//! and transaction-size fees; Testnet figures come from `tools/testnet`.
 //!
 //! Write the report with `AGENTBATCH_WRITE_BENCH=1 cargo test bench -- --nocapture`.
 

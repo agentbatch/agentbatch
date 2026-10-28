@@ -40,6 +40,9 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
   accepted or redeemed amount, or below the request price.
 - Its store is bound to one deployment and fails closed on missing, malformed,
   duplicate or foreign data.
+- Initial store creation is explicit and exclusive. Ordinary provider startup
+  never creates missing state. If accepted-voucher history is lost, stop
+  serving until it is recovered; the redeemed counter alone is insufficient.
 
 ## Assumptions
 
@@ -49,7 +52,9 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
 2. **Providers pin the deployment.** A provider must check the contract's WASM
    hash and payment token before it trusts channel data
    (`assertTrustedDeployment`). A contract with different code could report
-   any allocation and never pay.
+   any allocation and never pay. The demo rejects a client using another
+   contract or chain connection and checks the RPC network passphrase before
+   reading channel state.
 3. **Providers trust their RPC endpoint.** Channel state is read by
    simulation. A dishonest RPC could overstate an allocation, and the provider
    would then serve requests it cannot redeem. Use your own or several
@@ -68,6 +73,11 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
    that includes it.
 
 ## Known limitations (by design for the PoC)
+
+- **Per-channel caps only.** Allocations bound each channel's liability. The PoC
+  has no aggregate per-agent or per-provider budget spanning several channels.
+- **No protected closure yet.** The product's planned claim period and safe
+  release/refund rules require a separate lifecycle specification and validation.
 
 - **Locked collateral.** There is no channel close or reallocation, so
   allocations that are never redeemed stay locked. Tokens sent directly to the

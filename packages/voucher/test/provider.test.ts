@@ -154,6 +154,21 @@ describe("ChannelSpender", () => {
 });
 
 describe("MemoryVoucherStore", () => {
+  it.each([
+    ["zero channel", 0n, 1n],
+    ["negative channel", -1n, 1n],
+    ["channel above u64", 1n << 64n, 1n],
+    ["zero amount", 1n, 0n],
+    ["amount above i128", 1n, 1n << 127n],
+  ])("refuses %s before changing the highest claim", (_name, channelId, amount) => {
+    const { spender } = fixture();
+    const store = new MemoryVoucherStore(SCOPE);
+    const voucher = spender.pay(UNIT);
+    store.put(voucher);
+    expect(() => store.put({ ...voucher, channelId, amount })).toThrow();
+    expect(store.all()).toEqual([voucher]);
+  });
+
   it("stores copies, so callers cannot mutate accepted vouchers", () => {
     const { spender } = fixture();
     const store = new MemoryVoucherStore(SCOPE);
@@ -189,6 +204,46 @@ describe("FileVoucherStore", () => {
 
   it("fails closed when the file is missing unless creation is requested", () => {
     expect(() => new FileVoucherStore(tempPath(), SCOPE)).toThrow(/ENOENT/);
+  });
+
+  it("refuses to provision over an existing store and preserves its claim", () => {
+    const path = tempPath();
+    const { spender } = fixture();
+    const store = new FileVoucherStore(path, SCOPE, { create: true });
+    const voucher = spender.pay(UNIT);
+    store.put(voucher);
+    const before = readFileSync(path, "utf8");
+    expect(() => new FileVoucherStore(path, SCOPE, { create: true })).toThrow(/EEXIST/);
+    expect(readFileSync(path, "utf8")).toBe(before);
+    expect(new FileVoucherStore(path, SCOPE).get(1n)).toEqual(voucher);
+  });
+
+  it.each([
+    ["numeric channel", 1, "100"],
+    ["numeric amount", "1", 100],
+    ["rounded JSON number", "1", Number.MAX_SAFE_INTEGER + 1],
+    ["null channel", null, "100"],
+    ["null amount", "1", null],
+    ["object channel", {}, "100"],
+    ["array amount", "1", [100]],
+    ["zero channel", "0", "100"],
+    ["channel above u64", (1n << 64n).toString(), "100"],
+    ["zero amount", "1", "0"],
+    ["amount above i128", "1", (1n << 127n).toString()],
+    ["leading-zero channel", "01", "100"],
+    ["leading-zero amount", "1", "0100"],
+  ])("refuses a file with %s", (_name, channelId, amount) => {
+    const path = tempPath();
+    writeFileSync(path, JSON.stringify({ version: 1, ...SCOPE, vouchers: [{ channelId, amount, signature: "ab".repeat(64) }] }));
+    expect(() => new FileVoucherStore(path, SCOPE)).toThrow(/malformed|outside/);
+  });
+
+  it("round-trips the maximum valid channel and amount without precision loss", () => {
+    const path = tempPath();
+    const store = new FileVoucherStore(path, SCOPE, { create: true });
+    const voucher = { channelId: (1n << 64n) - 1n, amount: (1n << 127n) - 1n, signature: new Uint8Array(64) };
+    store.put(voucher);
+    expect(new FileVoucherStore(path, SCOPE).get(voucher.channelId)).toEqual(voucher);
   });
 
   it("refuses a store written for another deployment", () => {
