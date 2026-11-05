@@ -1,7 +1,13 @@
 # Changelog
 
-## Unreleased — Infrastructure layout and PoC audit follow-up
+## Unreleased — Architecture, infrastructure and PoC review follow-up
 
+- Specified the full production architecture, lifecycle, aggregate budgets, SDK,
+  Console, indexer, transaction recovery and operations with explicit implementation
+  boundaries. Added governance, contribution, conduct and release requirements,
+  and corrected current-versus-historical documentation claims.
+- Included the unchanged Apache-2.0 license, package usage documentation and
+  matching source-map inputs in the private voucher tarball.
 - Moved the Testnet runner to `tools/testnet`, split its deployment, settlement,
   benchmarking and reporting workflows, and isolated each run's evidence,
   disposable keys and provider state.

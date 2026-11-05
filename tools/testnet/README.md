@@ -35,3 +35,14 @@ is missing. Completion is recorded only after the scenario and reports finish.
 Full workspace commands, evidence selection and compatibility notes are in the
 [contributing guide](../../CONTRIBUTING.md). Decode and independently
 reconcile public records with the [evidence tool](../evidence/README.md).
+
+## Transaction and recovery limits
+
+The runner uses source-as-fee-payer Keypair signing and a 120-second timeout. It
+aborts on restoration preambles, duplicate/try-later submission responses and
+unknown outcomes; it does not implement production wallet authorization,
+restoration, source leases or durable retry intents. Inspect any reported hash
+before taking another economic action. `agentFor` initializes from redeemed only
+for the controlled sequential scenario; real agents must recover the highest ever
+signed amount. See [production transaction design](../../docs/architecture.md#7-networks-releases-and-transaction-execution)
+and [recovery](../../docs/production-operations.md).

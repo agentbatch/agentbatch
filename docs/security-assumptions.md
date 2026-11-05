@@ -26,16 +26,19 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
   signer.
 - A batch is all-or-nothing, including token transfers.
 - Arithmetic is checked; negative and zero amounts are rejected.
-- A missing channel is an error; an archived channel is restored with its full
-  state.
+- A missing channel is an error. Archived persistent state retains its counters,
+  but network use requires a correctly prepared restoration and sufficient resources.
+  The native testutils restoration check is not an end-to-end network restore test.
 - A deposit is credited only for the balance the contract actually received.
-- Contract error codes (101–113) cannot be confused with Stellar Asset
-  Contract error codes (1–15).
+- Current contract error codes (101–113) differ from the pinned SAC codes
+  (1–15); decoding still needs failing-contract context. Arbitrary contracts and
+  future versions do not have a guaranteed globally unique numeric namespace.
 
 ## What the off-chain verifier guarantees
 
-- It accepts exactly the signatures the contract accepts, or fewer: it applies
-  the host's `verify_strict` rule and refuses channels with unsafe signer keys.
+- It accepts a subset of the signatures the pinned host accepts: it applies
+  the host's `verify_strict` rule with additional canonical-point checks and
+  refuses channels with unsafe signer keys.
 - It never accepts a voucher above the allocation, at or below the highest
   accepted or redeemed amount, or below the request price.
 - Its store is bound to one deployment and fails closed on missing, malformed,
@@ -59,7 +62,11 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
    simulation. A dishonest RPC could overstate an allocation, and the provider
    would then serve requests it cannot redeem. Use your own or several
    independent RPC endpoints.
-4. **Asset issuer powers.** If the issuer can freeze or claw back balances, it
+4. **Asset behavior and issuer powers.** The constructor checks only seven
+   decimals, not that the token is an authentic SAC. Deposit checks incoming
+   balance delta, but payouts assume exact outgoing transfer behavior. Production
+   admission must pin the actual issuer/SAC and inspect its controls.
+   If the issuer can freeze or claw back balances, it
    can block payouts (making a batch revert) or reduce the contract's balance
    below its recorded liabilities. The PoC's AUSD issuer sets no
    authorization flags. Production use with a regulated asset must take the
@@ -68,16 +75,18 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
    channel, and each agent signs from one process. Concurrent production
    deployments need an atomic provider store and a single signing counter per
    channel.
-6. **Providers have trustlines.** A G-account provider needs an authorized
-   AUSD trustline. Without one its transfer fails, and so does every batch
-   that includes it.
+6. **Providers have trustlines.** A non-issuer G-account provider needs an authorized
+   AUSD trustline with sufficient receiving headroom. Classic balance/transfer
+   bounds are narrower than i128. The issuer is an exception without a
+   self-trustline; paying it retires units. The PoC does not exclude it.
 
 ## Known limitations (by design for the PoC)
 
 - **Per-channel caps only.** Allocations bound each channel's liability. The PoC
   has no aggregate per-agent or per-provider budget spanning several channels.
-- **No protected closure yet.** The product's planned claim period and safe
-  release/refund rules require a separate lifecycle specification and validation.
+- **No protected closure yet.** The proposed claim period and safe
+  release rules are specified in the production architecture but remain
+  unimplemented and require adversarial validation.
 
 - **Locked collateral.** There is no channel close or reallocation, so
   allocations that are never redeemed stay locked. Tokens sent directly to the
@@ -88,8 +97,8 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
 - **No revocation or rotation.** A compromised agent key can authorize
   payments up to its channel's remaining reservation, and only to that
   channel's provider.
-- **Single treasury per deployment.** Multi-tenant isolation is not
-  implemented.
+- **Single treasury per deployment.** Separate deployments already isolate
+  state, but multi-organization catalog, operations and access control are absent.
 
 ## Out of scope
 
@@ -98,3 +107,27 @@ recycling, multi-tenancy, keeper incentives, netting, MPP and x402 adapters,
 passkeys, upgradeability, and Mainnet deployment.
 
 See [`audit-report.md`](audit-report.md) for the internal review findings.
+
+## Production threat model and residual risks
+
+The [architecture](architecture.md) and [operations](production-operations.md)
+specify required mitigations; these are not deployed protections:
+
+| Abuse or failure | Required mitigation and remaining risk |
+|---|---|
+| Owner/agent/provider collusion | Exact authorization, immutable recipients, per-channel collateral and aggregate spent+reserved budgets. Authorized collusion can consume the entire allocation; no proof of service is enforced. |
+| Owner closes while provider holds vouchers | Fixed monitored claim window, independent redemption, retained collateral. Claims must execute successfully by D; submission/queueing alone does not preserve them. |
+| Key rotation or budget reset bypass | Canonical one-per-subject budgets, internally resolved immutable channel associations, stable agent identity, new channel IDs and old reservation retained; no epochs or counter resets in the first version. |
+| Captured voucher or request used for service theft | Bind a separately signed request to the exact quote/body and TLS client identity; enforce that identity on every delivery/retrieval path. Current vouchers authenticate payment only. |
+| Portable owner grant survives transaction expiry | Track owner nonce/expiry independently, reconcile all envelopes and never re-sign an unresolved economic intent merely because its original envelope expired. |
+| Concurrent requests or process crash | Transactional acceptance/dedup/outbox and durable highest-signed journal before acknowledgment. Current sequential stores do not provide these guarantees. |
+| False RPC/indexed state | Pin network/code/asset; controlled/corroborated state and age limits; stop acceptance on stale observations. A code hash obtained from a dishonest RPC is not a state proof. |
+| Replay after Testnet reset | Fresh contract salts and keys; generation-scoped jobs/cursors/stores; never recreate identical signing context. |
+| Coordinator censorship, stale batch or fee abuse | Provider self-submission, candidate quarantine, deadlines first, leases and bounded fees/retries. Atomic batches retain a liveness cost. |
+| Malicious metadata/console/dependency | Validated fetches, SSRF limits, reviewed bundles, wallet signed-plan checks, lockfiles and artifact provenance. Hosting controls still require implementation. |
+| External SAC restrictions or deficit | Asset admission, holder-state monitoring and issuer-aware incident response. No on-chain guarantee overrides freeze/clawback. |
+| Lost archive/private voucher state | Independent durable backups and recovery drills. Current state cannot reconstruct history or outstanding claims. |
+
+Do not treat the production scope as merely adding a user interface to the PoC.
+Independent review must cover lifecycle, distributed acceptance, wallets,
+transaction recovery, budget accounting and operational dependencies together.

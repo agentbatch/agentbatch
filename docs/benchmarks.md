@@ -53,8 +53,10 @@ Reading the setup costs:
   cost 11.8M (deploy), 4.8M (deposit) and 8.9M (`open_channel`) stroops, a
   rise of more than 4×. Settlement fees did not move: 22,296 and 10,968 stroops
   then, 22,294 and 10,966 now.
-- **The code upload is a one-time cost per WASM version** and is shared by every
-  deployment of that code. The contract deliberately extends only its own
+- **Code upload can be reused across deployments of a WASM version** and is shared by every
+  deployment of that code while retained. Code retention/restoration can incur
+  additional rent; this is not a lifetime exemption from storage costs.
+  The contract deliberately extends only its own
   instance, never the code entry (see
   [review finding F-2](review-findings.md)). Before that fix, deploying fresh
   code would have cost 8,783,023,303 stroops at these rates.

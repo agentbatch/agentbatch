@@ -39,7 +39,8 @@ off-chain vouchers, and bounded multi-provider settlement.
 
 Our vision is to make Stellar the network of choice for high-volume agent commerce.
 The [full vision and roadmap](docs/vision.md) describes the intended product;
-[architecture](docs/architecture.md) describes the implementation available today.
+[architecture](docs/architecture.md) specifies the completed production design and
+clearly separates it from the implementation available today.
 
 ## Implemented PoC
 
@@ -133,8 +134,8 @@ tools/testnet/              Deployment, provider simulation, settlement and benc
 tools/evidence/             Offline archive checks and read-only RPC verification
 examples/offline-payments/  Runnable local signing and verification example
 test-vectors/              Shared Rust/TypeScript protocol compatibility fixtures
-deployments/testnet/        Indexed historical evidence and isolated new runs
-docs/                      Protocol, development, security and execution documentation
+deployments/testnet/        Committed historical evidence and isolated local runs
+docs/                      Architecture, protocol, security and execution documentation
 scripts/                   Thin command compatibility wrappers
 .github/                   CI and contribution templates
 ```
@@ -155,7 +156,7 @@ See [docs/architecture.md](docs/architecture.md) and
 ## Quick start
 
 Requirements: Rust 1.94.1 with the `wasm32v1-none` target (pinned in
-`rust-toolchain.toml`), Stellar CLI 26.x, Node ≥ 22.12, pnpm 10.
+`rust-toolchain.toml`), Stellar CLI 26.0.0, Node ≥ 22.12 (tested with 22.13.1), pnpm 10.19.0.
 
 ```bash
 # Install exact dependencies, build and run all offline checks
@@ -187,7 +188,11 @@ installation, building and offline validation.
 ## Documentation
 
 - [Vision and roadmap](docs/vision.md): complete product design and development objectives.
-- [Architecture](docs/architecture.md): current contract, storage, TTL and settlement flow.
+- [Architecture](docs/architecture.md): full production design with an explicit PoC baseline.
+- [SDK reference](docs/sdk.md): existing exports, exact amounts and proposed public interfaces.
+- [Operations](docs/production-operations.md): deployment acceptance, monitoring and recovery.
+- [Maintenance and releases](docs/maintenance.md): governance, ownership gaps, supply chain and artifacts.
+- [Decision records](docs/decisions.md): proposed production tradeoffs and their consequences.
 - [Voucher format](docs/voucher-format.md): exact signed encoding and domain binding.
 - [Accounting invariants](docs/accounting-invariants.md): collateral and payout rules.
 - [Security assumptions](docs/security-assumptions.md): threat model and implementation limits.
@@ -195,6 +200,8 @@ installation, building and offline validation.
 - [Specification review](docs/poc-spec-review.md): implementation decisions.
 - [Review findings](docs/review-findings.md): security corrections and regression coverage.
 - [Earlier internal review](docs/audit-report.md): historical review findings.
+- [Contributing](CONTRIBUTING.md), [security reporting](SECURITY.md) and
+  [community conduct](CODE_OF_CONDUCT.md): participation and support policies.
 
 ## Scope
 

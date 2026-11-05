@@ -4,7 +4,10 @@
 > ([`review-findings.md`](review-findings.md)) found further issues, including
 > one High in the off-chain verifier, and the current code and evidence
 > (WASM `ab37537a…`) reflect its fixes. Error codes cited below predate the
-> renumbering to 101–113 (e.g. `#9` is now `#109`).
+> renumbering to 101–113 (e.g. `#9` is now `#109`). All counts, fees, CI
+> observations and verification labels below refer to that historical review.
+> Current architecture and documentation review results are recorded separately
+> in [review-findings.md](review-findings.md).
 
 This is the project team's internal review, done after the implementation was
 complete. **It is not an independent external audit.** Severity reflects

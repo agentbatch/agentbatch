@@ -36,9 +36,9 @@ aborts the whole invocation on failure.
 must be canonical (`s < L`), neither `R` nor the public key may be a
 small-order point, and the cofactorless equation `encode([s]B − [k]A) == R`
 must hold. Many Ed25519 libraries use the cofactored equation and accept
-signatures this rule rejects, so an off-chain verifier must implement exactly
-this rule (`verifyStrict` in `@agentbatch/voucher`), or a provider could accept
-vouchers it can never redeem. Providers also refuse channels whose signer key
+signatures this rule rejects. Off-chain verification must be at least as strict
+as the host, or a provider could accept vouchers it can never redeem.
+`verifyStrict` in `@agentbatch/voucher` also rejects noncanonical point encodings. Providers also refuse channels whose signer key
 is not a prime-order point (`isSafeSignerKey`): with a mixed-order key most
 honestly produced signatures fail `verify_strict`.
 
@@ -115,3 +115,23 @@ locally. AgentBatch adds the fields a shared-treasury design needs: the channel
 ID, because many channels share one contract; and the owner, provider and
 signer, which are bound explicitly instead of being implied by a dedicated
 contract instance.
+
+## Lifecycle and version boundary
+
+V1 has no signature issuance time, request ID, price, expiry or closing deadline.
+The PoC has no claim expiration or close function. Proposed production closure
+therefore cannot prove that a voucher was signed before close-start; it honors
+valid claims that execute successfully at or before the contract deadline
+ledger and releases funds afterward. Earlier RPC submission alone does not
+preserve an unexecuted claim. See [architecture](architecture.md#4-production-contract-and-lifecycle-design).
+The proposed `AGENTBATCH_V1` production domain retains the eight-field layout
+with a different domain symbol and needs new frozen vectors. It is not
+implemented. Preserve this reference for PoC v1 evidence; do not relabel its
+bytes as another protocol version.
+
+
+The proposed service adapter authenticates request body, quote, request ID and
+client delivery identity separately from the payment voucher; see
+[authenticated service requests](architecture.md#authenticated-service-requests).
+Neither possession of a valid voucher nor a guessed request ID grants access to
+service/results. This is not functionality of the implemented PoC wire format.

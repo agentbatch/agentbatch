@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: Report a security vulnerability
     url: https://github.com/agentbatch/agentbatch/security/advisories/new
-    about: Please report vulnerabilities privately, not as public issues.
+    about: Use private reporting if enabled; see SECURITY.md for availability and fallback guidance.

@@ -3,8 +3,8 @@
 All amounts are `i128` base units of a 7-decimal Stellar Asset Contract
 (1 AUSD = 10,000,000). Every addition and subtraction in state-changing
 functions is checked (`checked_add` / `checked_sub` → `ArithmeticOverflow`).
-Views use saturating arithmetic or bounded subtraction, and the release
-profile keeps `overflow-checks = true`.
+View arithmetic uses saturating operations or bounded subtraction; dependency
+calls can still fail. The release profile keeps `overflow-checks = true`.
 
 ## Scope of the implemented limits
 
@@ -34,11 +34,11 @@ eligible outstanding vouchers throughout its defined claim period.
 | I2 | For every channel: `0 ≤ redeemed ≤ allocation`, `remaining = allocation − redeemed` | `redeemed` only moves to a voucher amount `v` with `redeemed < v ≤ allocation`. |
 | I3 | `Σ remaining = total_reserved` | Opening adds `allocation` to both sides; redemption subtracts the payout from both. |
 | I4 | `available ≥ 0`, `total_reserved ≥ 0` | Allocation and withdrawal require `amount ≤ available`; payouts are bounded by I2. |
-| I5 | `token_balance ≥ available + total_reserved` (solvency) | A deposit is credited only if the contract's balance rose by exactly the amount (`TransferMismatch` otherwise), and payouts and withdrawals move out exactly what accounting records. Unsolicited transfers only increase the balance. Holds unless the asset issuer claws back the contract's balance. |
+| I5 | `token_balance ≥ available + total_reserved` (solvency) | A deposit is credited only if the contract's balance rose by exactly the amount (`TransferMismatch` otherwise), and payouts and withdrawals move out exactly what accounting records. Unsolicited transfers only increase the balance. Requires exact-transfer asset behavior and no issuer clawback of the contract balance. |
 | I6 | No double allocation | `open_channel` moves funds from `available` to one channel's reservation; nothing else draws on a reservation except that channel's provider. |
 | I7 | No withdrawal of reserved collateral | `withdraw_available` is bounded by `available` (I4). |
 | I8 | No repeated payout | Payout is `v − redeemed`, and `redeemed := v`; resubmitting `v` or any lower amount fails with `StaleVoucher`. |
-| I9 | Unaccounted tokens are never credited | `available` changes only through `deposit`; `get_treasury` reports `unaccounted_balance` separately. |
+| I9 | Unaccounted tokens are never credited | `available` is credited only through `deposit` in the PoC; allocation and withdrawal decrease it. `get_treasury` reports `unaccounted_balance` separately. |
 | I10 | Failed operations change nothing | Any error or trap reverts the whole invocation, including token transfers. |
 
 Collateral consequence for providers: because a channel's allocation is
@@ -69,3 +69,14 @@ These values are asserted by `scenario::run`
 (`test::scenario::poc_demo_scenario_native`, `test::wasm::poc_demo_scenario_wasm`)
 and read back
 from Testnet in [archived Testnet records](../deployments/testnet/evidence.json).
+
+## Production accounting extension
+
+The [primary architecture](architecture.md#4-production-contract-and-lifecycle-design)
+defines proposed release accounting: `remaining = allocation - redeemed - released`,
+with finalization moving remaining reservation back to available exactly once.
+Aggregate budgets track lifetime spent plus outstanding reservation; redemption
+moves reservation to spent and does not replenish spending headroom. These rules
+are not implemented or covered by the PoC invariant suite. Asset deficits must
+remain visible; a normal deposit increases balance and liabilities together and
+cannot repair an existing deficit by itself.

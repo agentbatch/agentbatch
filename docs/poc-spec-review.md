@@ -37,7 +37,8 @@ release recommendations.
 
 ## Scope check
 
-Implemented: exactly the six mutating and view functions in §5, plus one
-read-only helper (`voucher_message`) used for the encoding parity check
-against the deployed contract. Nothing from §11 (excluded features) was
+Implemented: the constructor, four public mutating functions (`deposit`,
+`open_channel`, `redeem_batch`, `withdraw_available`), two state views
+(`get_treasury`, `get_channel`), and the read-only helper `voucher_message`
+for encoding parity against the deployed contract. Nothing from §11 (excluded features) was
 implemented.

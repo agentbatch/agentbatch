@@ -3,7 +3,9 @@
 
 > This is the full product vision. The proof of concept in this repository
 > implements only the scope described in §15; everything else is planned work.
-> See [archived Testnet records](../deployments/testnet/evidence.json) for what is demonstrated today.
+> The [primary architecture](architecture.md) specifies the completed design,
+> including custody topology, budget semantics and protected closure.
+> See [archived Testnet records](../deployments/testnet/evidence.json) for the dated demonstration.
 
 ### 1. Project Overview
 
@@ -176,7 +178,10 @@ It maintains:
 
 Treasuries are logically isolated so funds belonging to one organization cannot satisfy another organization's payment obligations.
 
-The initial PoC supports one treasury. The production architecture extends this to multiple organizations.
+The initial PoC supports one treasury per deployment. The production architecture
+supports multiple organizations through isolated treasury deployments sharing
+reviewed code, with one asset per treasury. Cross-treasury budgets and atomic
+settlement require a separate design.
 
 #### 6.2 Virtual Payment Channels
 
@@ -210,7 +215,9 @@ The signed payload binds the commitment to its intended execution context, inclu
 - Cumulative payment amount.
 - Signature-domain version.
 
-A service provider verifies the signature off-chain against authenticated channel configuration.
+A service provider verifies the signature off-chain against pinned deployment
+configuration and channel state obtained through a trusted or corroborated RPC.
+Pinning code and asset does not cryptographically authenticate an RPC response.
 
 The provider also checks that the cumulative amount is greater than its previously accepted amount and does not exceed the channel's permitted ceiling.
 
@@ -302,15 +309,20 @@ Organizations can:
 
 The objective is to simplify treasury administration without introducing unsecured credit or reusing funds already committed to providers.
 
-The planned lifecycle is open → closing → claim period → released. Starting
+The planned state machine is Open → Closing (the claim period) → Closed.
+Finalization releases eligible remaining collateral after the fixed deadline. Starting
 closure must define when providers stop accepting new vouchers and the deadline
 for presenting eligible existing claims. Providers, or authorized watchtowers,
-must monitor and submit claims within that window. Only collateral no longer
-needed under those rules may return to available funds or be refunded. A low
+must monitor and secure successful claim execution by the deadline ledger. Only
+collateral no longer needed under those rules may return to available funds or be refunded. A low
 on-chain redeemed amount does not establish that no unredeemed vouchers exist.
-The claim-window rules, concurrent redemption behavior and release accounting
-need an explicit specification, adversarial tests and security review before
-production use.
+The [architecture](architecture.md#4-production-contract-and-lifecycle-design)
+specifies ledger boundaries, claim eligibility, release accounting and replacement
+channels for rotation. Vouchers cannot prove issuance time: a valid signed claim
+is eligible only if it executes successfully by the deadline ledger, and
+compromised-key exposure persists
+within the reserved ceiling. These rules still need implementation, adversarial
+tests and independent security review before production use.
 
 ### 9. Ecosystem Integrations
 

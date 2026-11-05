@@ -12,11 +12,12 @@
 
 ## Security checklist (contract changes)
 
-- [ ] Authorization: every state-changing entry point requires the correct `require_auth`
+- [ ] Authorization: administrative calls require exact owner authorization; permissionless redemption pays only stored providers
 - [ ] Arithmetic: amounts validated (> 0) and checked; no silent overflow
 - [ ] Collateral invariant still holds and is covered by tests
 - [ ] Provider address read from storage, never from caller input
-- [ ] Storage TTLs extended where entries are touched
+- [ ] Storage TTL policy and every code/data/asset dependency are accounted for
+- [ ] Lifecycle/compatibility changes preserve outstanding claims and document migration
 
 ## Testing
 
