@@ -30,9 +30,9 @@ consolidated in [FUTURE_WORK.md](FUTURE_WORK.md).
 - **Every historical PoC claim was re-derived from the raw Testnet XDR** and holds
   ([§5](#5-verification-of-poc-claims)). One figure supplied for verification
   (32,892 stroops) is not in the record; the archived value is 32,898.
-- 16 findings: 0 Critical, 0 High, 3 Medium, 11 Low, 2 Informational. Eight are
-  fixed in this branch, one is documented as accepted design, one needs no change,
-  and six are open and carried into the future-work register.
+- 25 findings: 0 Critical, 0 High, 5 Medium, 18 Low, 2 Informational. Seventeen
+  are fixed in this branch, one is documented as accepted design, one needs no
+  change, and six are open and carried into the future-work register.
 - **The README now describes the project** (what it is, why, how it works, the
   financial guarantee, what exists versus what is planned, demonstrated results),
   and documents no longer state dates of the work (RR-15, RR-16).
@@ -260,6 +260,26 @@ risk without a demonstrated failure in this repository.
 - **Acceptance criteria:** No calendar date in tracked Markdown outside the license text.
 - **Status:** **Fixed** in this branch.
 
+### Documentation and supply-chain audit (RR-17 to RR-25)
+
+A line-by-line review of every document against the code and Stellar behavior.
+All findings are **verified** and **fixed** in this branch.
+
+| ID | Severity | Document | Finding | Correction |
+|---|---|---|---|---|
+| RR-17 | Medium | `vision.md` §6.3 | Listed "AgentBatch contract" and "Treasury" as separate signed fields and omitted the owner. The payload binds network, contract (which identifies the treasury), owner, channel, provider, signer, amount and domain. | Field list corrected; notes that callers submit only channel, amount and signature. |
+| RR-18 | Low | `vision.md` §7 | "Treasury solvency checks" implied a runtime solvency check. The contract checks the exact deposit delta; solvency is asserted by tests and checked live by the Testnet runner. | Reworded to what the code does. |
+| RR-19 | Low | `vision.md` §6.1 | Implied the contract accepts SEP-41 assets including USDC. The PoC accepts any token contract reporting 7 decimals; production admits a pinned SAC. | Target and PoC behavior stated separately. |
+| RR-20 | Low | `vision.md` §8–§10 | Planned SDK described in the present tense; "suspend compromised agents" contradicted the design (no instant revocation); "verifies instantly". | Tense corrected; suspension described as stopping service and closing; "locally, without a network round trip". |
+| RR-21 | Low | `poc-spec-review.md` | Cited section numbers of a requirements brief not in the repository; S13 said agents continue from `redeemed`, contradicting the normative restart rule. | Brief identified (vision §15); S13 limited to the controlled demo with the general rule linked. |
+| RR-22 | Low | `voucher-format.md` | Binding table omitted the owner binding and its test; one link labeled "architecture" pointed at the specification. | Row and label added. |
+| RR-23 | Low | `ARCHITECTURE.md`, `benchmarks.md` | TTL given only in days although the contract counts ledgers; "transactions serialize" imprecise under parallel Soroban execution. | Ledger counts stated with approximate days; contention described as conflicting footprints on the treasury instance. |
+| RR-24 | Medium | CI, `maintenance.md` | The job that proves the deployed WASM hash installed the Stellar CLI with `curl \| tar` and no checksum. | CI verifies the archive against the SHA-256 recorded in the GitHub release metadata (`31c83db3…2e84`) before extracting; doc updated. |
+| RR-25 | Low | Issue and PR templates | Bug report offered a non-existent "coordinator" component; nothing prompted keeping the status matrix and backlog in sync. | Real components listed; PR template gains documentation checks; feature requests reference backlog IDs. |
+
+RR-15 was also extended: the README now covers the full project, technical
+features, use cases and value for Stellar, with links to the key technical documents.
+
 ## 4. Security analysis
 
 | Attack | Result | Enforced by | Test evidence |
@@ -270,7 +290,7 @@ risk without a demonstrated failure in this repository.
 | Replayed cumulative balance | No payout | `amount > redeemed` | `cumulative_vouchers_pay_only_increment`; Testnet FAILED transaction `#109` |
 | Over-allocation (channel or voucher) | Rejected | `allocation ≤ available`; `amount ≤ allocation` | `over_allocation_rejected`, `amount_above_allocation_rejected`; Testnet `#102`, `#110` |
 | Withdrawal of reserved funds | Rejected | `amount ≤ available` | `withdrawal_limited_to_unallocated_funds`; Testnet `#102` |
-| Withdrawal race | Not possible on-chain | Soroban executes transactions serially per contract state; each call re-reads `available` | Randomized model test |
+| Withdrawal race | Not possible on-chain | Ledger application is serializable; every mutation writes the treasury instance, so conflicting calls never interleave, and each re-reads `available` | Randomized model test |
 | Channel replacement or rewrite | Not possible | No function modifies provider, signer or allocation | `channel_provider_and_signer_are_immutable` |
 | Stale off-chain state | No loss; possible batch revert | Cumulative semantics | RR-04 |
 | Reentrancy | Not possible | Host forbids re-entering a contract; accounting written before transfers; token fixed | Code review |
@@ -333,4 +353,5 @@ Run on the review branch after all changes:
 | Local links and anchors in tracked Markdown, including `<a id>` anchors | 0 problems |
 | Funding-programme and AI-authorship references in tracked files | None found |
 | Calendar dates in tracked Markdown (excluding the license) | None found |
+| Stellar CLI 26.0.0 release archive SHA-256 equals the GitHub release digest pinned in CI | Passed |
 | Sensitive logic (escrow accounting, authorization, signature verification, settlement) | Unchanged; only test assertions added |

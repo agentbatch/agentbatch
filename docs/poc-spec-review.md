@@ -1,6 +1,7 @@
-# Pre-Implementation Review of the PoC Specification
+# PoC Specification Review
 
-The PoC brief was reviewed against the Soroban SDK, the Stellar one-way channel
+The PoC requirements brief (summarized in [vision §15](vision.md#15-initial-proof-of-concept--intentionally-limited-scope);
+section numbers below refer to the brief itself) was reviewed against the Soroban SDK, the Stellar one-way channel
 contract, the Stellar MPP SDK and the live Testnet before any code was written.
 This document records where the brief needed interpretation and what was
 decided. Each item links to the code or test that implements the decision.
@@ -33,7 +34,7 @@ recommendations.
 | S10 | §10 compare against three separate redemptions with equal starting state | Testnet state cannot be rewound. | Two deployments of the same WASM with identical deposits, channels and amounts. |
 | S11 | §10 "do not claim 66%" | — | Measured −32.2% fee and −30.7% declared instructions for three vouchers (latest run). |
 | S12 | §11 no closure, so unused collateral stays locked | — | Documented; test assets only. |
-| S13 | §8 provider vouchers and the 17 AUSD incremental step | The agent must continue from the redeemed amount after settlement. | `ChannelSpender` starts from the on-chain `redeemed`; the provider rechecks against both its store and the on-chain amount. |
+| S13 | §8 provider vouchers and the 17 AUSD incremental step | The agent must continue from its last amount after settlement. | In the controlled demo every accepted voucher was redeemed first, so `ChannelSpender` starts from the on-chain `redeemed`. In general an agent must restart from the highest amount it ever signed, not from `redeemed` ([ARCHITECTURE §6.5](ARCHITECTURE.md#65-vouchers-allocations-settlement-and-withdrawal), FW-SDK-03). The provider rechecks against both its store and the on-chain amount. |
 
 ## Scope check
 

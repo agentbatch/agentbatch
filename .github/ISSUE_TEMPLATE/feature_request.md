@@ -10,4 +10,4 @@ labels: enhancement
 
 **Security or collateral implications**
 
-**PoC scope or future work?**
+**Related backlog item** (an `FW-…` ID from docs/FUTURE_WORK.md, if any)

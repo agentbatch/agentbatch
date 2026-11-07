@@ -169,8 +169,9 @@ optimized WASM 17,001 bytes, SHA-256 `ab37537a…68a04` (reproduced by CI from s
 
 Storage: `Config` and `Treasury` in instance storage; one persistent
 `DataKey::Channel(u64)` entry per channel. Mutations extend only the contract
-**instance** TTL (threshold 7 days, target 30 days); new channels receive at least
-30 days; the shared WASM code entry is deliberately never extended by the contract.
+**instance** TTL (threshold 120,960 ledgers, target 518,400 ledgers, about 7 and
+30 days at roughly 5 seconds per ledger); new channels receive at least 518,400
+ledgers; the shared WASM code entry is deliberately never extended by the contract.
 Errors are numbered 101–113, separate from SAC errors 1–15. There is no upgrade,
 pause, close, setter or sweep function. Full interface, failure and event details:
 [production specification §3](production-specification.md#3-implemented-contract-specification).
@@ -663,7 +664,7 @@ interchangeable with AgentBatch vouchers.
 | Deployment | `pnpm testnet:demo`: fresh disposable keys and contracts per run, isolated run directory | Reviewed release manifest, reproducible artifact, owner-authorized deployment |
 | Artifact provenance | CI rebuilds the WASM and requires its hash to equal the manifest | Signed release, build-image digest, complete manifest ([FW-DOC-04](FUTURE_WORK.md#fw-doc-04)) |
 | Keys | Disposable keys in gitignored `.secrets/` | Owner wallet policy, isolated agent signer, separate fee accounts |
-| TTL and rent | Instance extended on mutation; channel ≥ 30 days on open; shared code entry never extended by the contract; no keeper | Keeper inventories and extends all dependencies, including shared code ([FW-OPS-02](FUTURE_WORK.md#fw-ops-02)) |
+| TTL and rent | Instance extended on mutation; channel ≥ 518,400 ledgers (≈ 30 days) on open; shared code entry never extended by the contract; no keeper | Keeper inventories and extends all dependencies, including shared code ([FW-OPS-02](FUTURE_WORK.md#fw-ops-02)) |
 | Monitoring and incidents | None (runner checks only) | Deadline watcher, reconciliation, alerting, runbooks ([production-operations.md](production-operations.md)) |
 | Evidence | Committed raw XDR; offline and RPC verifiers | Durable archive beyond RPC retention |
 
@@ -710,8 +711,9 @@ conservative PoC choice, not a derived limit ([FW-BS-03](FUTURE_WORK.md#fw-bs-03
 
 Other constraints:
 
-- **Contention:** every mutation writes the treasury instance, so transactions on one
-  treasury serialize. Scale-out is across treasuries.
+- **Contention:** every mutation writes the treasury instance entry, so transactions
+  on one treasury have conflicting footprints and cannot be applied in parallel
+  with each other. Scale-out is across treasuries.
 - **Storage growth:** one persistent entry per channel, never deleted, with rent
   owed while it must stay live ([FW-PERF-04](FUTURE_WORK.md#fw-perf-04)).
 - **Settlement frequency:** an operator trade-off between fees and the size of

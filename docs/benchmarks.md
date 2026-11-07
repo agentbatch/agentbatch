@@ -46,7 +46,7 @@ Reading the setup costs:
 - **Rent dominates every operation that creates or extends an entry.**
   Deployment pays for the new instance's 30-day TTL. `open_channel` pays for
   the new channel entry's 30-day TTL (measured live: liveUntil − lastModified =
-  518,400 ledgers = 30.0 days). The deposit's rent is for the contract's newly
+  518,400 ledgers, about 30 days at roughly 5 seconds per ledger). The deposit's rent is for the contract's newly
   created token-balance entry in the SAC.
 - **Testnet rent rates are volatile.** They rise with total Soroban state size.
   In the previous evidence run, about two hours earlier, the same operations

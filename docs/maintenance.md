@@ -94,9 +94,9 @@ funding and escalation before it is relied upon:
 Existing Dependabot configuration proposes weekly Cargo, npm and Actions updates;
 it excludes Soroban SDK automatic upgrades and Node type major upgrades as coded.
 Bot configuration does not prove triage happened or updates were merged. CI pins
-Actions by SHA and dependencies by lockfile, but currently downloads the CLI
-archive through curl/tar without checksum verification. A production build must
-verify CLI/optimizer/toolchain artifacts, record immutable runner/image identity,
+Actions by SHA and dependencies by lockfile, and verifies the downloaded Stellar
+CLI archive against its pinned SHA-256 before extracting it. A production build
+must also verify optimizer/toolchain artifacts, record immutable runner/image identity,
 and review dependency scripts and build network access. Neither pinning nor tests
 prove absence of malicious dependencies. Credential scopes must separate CI read
 access from registry/deployment/signing privileges.

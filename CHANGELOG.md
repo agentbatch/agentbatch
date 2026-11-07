@@ -17,6 +17,11 @@
   `available = total_deposited − total_withdrawn − Σ allocation`. Contract logic
   and the deployed artifact are unchanged.
 - Documented low-memory build settings.
+- README covers the full project, technical features, use cases and value for
+  Stellar, with links to the key technical documents. Corrected technical
+  statements in the vision, voucher format, specification review, benchmarks and
+  architecture; issue and PR templates match the repository.
+- CI verifies the downloaded Stellar CLI archive against its pinned SHA-256.
 
 - Specified the full production architecture, lifecycle, aggregate budgets, SDK,
   Console, indexer, transaction recovery and operations with explicit implementation

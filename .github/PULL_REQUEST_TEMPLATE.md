@@ -19,6 +19,12 @@
 - [ ] Storage TTL policy and every code/data/asset dependency are accounted for
 - [ ] Lifecycle/compatibility changes preserve outstanding claims and document migration
 
+## Documentation
+
+- [ ] `docs/ARCHITECTURE.md` status matrix (§13) still matches the code
+- [ ] `docs/FUTURE_WORK.md` updated: completed items removed or marked, new gaps added
+- [ ] No dates of the work added to documentation
+
 ## Testing
 
 <!-- Commands run and results. Do not claim Testnet results without tx hashes. -->

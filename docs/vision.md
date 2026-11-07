@@ -157,7 +157,7 @@ The three payment relationships remain independent even though they use the same
 
 If the AI inference provider later receives a voucher authorizing a cumulative payment of 17 USDC, only the additional 5 USDC is payable because the previous 12 USDC has already been redeemed.
 
-This demonstrates the combined benefit of shared funding, cumulative voucher accounting and batched settlement.
+This demonstrates the combined benefit of shared funding, cumulative voucher accounting and batched settlement. The archived Testnet run executed exactly this scenario, with the synthetic AUSD asset in place of USDC.
 
 ### 6. Core Technical Architecture
 
@@ -165,7 +165,7 @@ AgentBatch is built around a reusable Soroban settlement contract and off-chain 
 
 #### 6.1 Shared Treasury
 
-The treasury contract accepts supported Stellar assets through the SEP-41 token interface, including Stellar USDC.
+The treasury contract holds one admitted Stellar asset through its Stellar Asset Contract (the SEP-41 token interface), targeting Stellar USDC. The current PoC accepts any token contract reporting 7 decimals and was demonstrated with a synthetic test asset (AUSD); production admission pins the exact issuer and SAC.
 
 It maintains:
 
@@ -206,14 +206,16 @@ An AI agent signs a cumulative payment commitment using an Ed25519 signing key.
 
 The signed payload binds the commitment to its intended execution context, including:
 
-- Stellar network.
-- AgentBatch contract.
-- Treasury.
-- Channel.
+- Stellar network (network ID).
+- AgentBatch treasury contract (one contract per treasury, so its address identifies the treasury).
+- Treasury owner.
+- Channel ID.
 - Provider.
 - Authorized signing key.
 - Cumulative payment amount.
 - Signature-domain version.
+
+The caller submits only the channel ID, amount and signature; the contract rebuilds every other field from its own storage and the ledger.
 
 A service provider verifies the signature off-chain against pinned deployment
 configuration and channel state obtained through a trusted or corroborated RPC.
@@ -280,7 +282,7 @@ Security controls include:
 - Atomic batch redemption.
 - Prevention of collateral double allocation.
 - Protection against unauthorized withdrawals.
-- Treasury solvency checks.
+- Exact-amount deposit checks (credited only when the balance rises by the deposited amount), with solvency asserted after every operation in the test suite.
 - Appropriate Soroban storage-lifecycle handling.
 
 A compromised agent signing key must not authorize payments beyond its channel allocation.
@@ -300,8 +302,8 @@ Organizations can:
 - Allocate collateral across multiple agents and providers.
 - Increase channel spending ceilings.
 - Reassign funds that are not committed to outstanding claims.
-- Rotate delegated signing keys.
-- Suspend compromised agents.
+- Rotate delegated signing keys through replacement channels.
+- Stop serving compromised agents and close their channels (signatures cannot be revoked instantly; exposure stays bounded by the remaining allocation).
 - Initiate protected channel closure.
 - Reconcile provider payments.
 - Monitor available and reserved treasury balances.
@@ -346,9 +348,9 @@ Existing facilitator interfaces cannot be assumed to support AgentBatch vouchers
 
 #### AI Agent Frameworks
 
-Agent frameworks can integrate AgentBatch through an open TypeScript SDK.
+Agent frameworks will integrate AgentBatch through a planned open TypeScript SDK.
 
-The SDK provides interfaces for treasury management, channel creation, delegated signing, voucher verification and settlement operations.
+The SDK is planned to provide treasury management, channel creation, delegated signing, voucher verification and settlement operations. Today, the `@agentbatch/voucher` library provides voucher encoding, signing and verification.
 
 #### Stellar Wallets and Institutional Platforms
 
@@ -362,7 +364,7 @@ An agent consumes repeated inference requests from an external model provider.
 
 Each request creates an incremental payment commitment.
 
-The provider verifies the voucher instantly and periodically settles accumulated payments.
+The provider verifies the voucher locally, without a network round trip, and periodically settles accumulated payments.
 
 #### 10.2 One Agent, Multiple API Providers
 
