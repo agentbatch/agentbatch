@@ -44,5 +44,5 @@ unknown outcomes; it does not implement production wallet authorization,
 restoration, source leases or durable retry intents. Inspect any reported hash
 before taking another economic action. `agentFor` initializes from redeemed only
 for the controlled sequential scenario; real agents must recover the highest ever
-signed amount. See [production transaction design](../../docs/architecture.md#7-networks-releases-and-transaction-execution)
+signed amount. See [production transaction design](../../docs/production-specification.md#7-networks-releases-and-transaction-execution)
 and [recovery](../../docs/production-operations.md).

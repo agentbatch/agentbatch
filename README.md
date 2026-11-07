@@ -2,220 +2,292 @@
 
 **Shared treasury and batch settlement infrastructure for AI-agent payments on Stellar.**
 
-Stellar's [x402 `exact` flow](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_stellar.md)
-settles individual payments on-chain. The current
-[Stellar MPP channel implementation](https://github.com/stellar/stellar-mpp-sdk)
-uses [one-way channels](https://github.com/stellar-experimental/one-way-channel)
-funded for a payer–provider relationship. Agent fleets buying from many services
-must manage repeated settlements and separately allocated balances.
+AgentBatch is open-source payment infrastructure for organizations whose AI agents
+buy services from many independent providers: model inference, search, data,
+tools, evaluation and other agents. The organization funds **one** Soroban
+treasury. The treasury backs **many** provider payment channels, each with its
+own reserved collateral. Agents pay per request with signed off-chain vouchers that
+providers verify locally, and the claims of several providers are settled together
+in **one Stellar transaction**.
 
-AgentBatch proposes an open-source Soroban layer where **one organization-funded
-USDC treasury backs many agents across independent providers**. Its differentiation
-combines shared liquidity, virtual channels with reserved collateral, delegated
-off-chain vouchers, and bounded multi-provider settlement.
+> **Status:** Stellar Testnet proof of concept with a synthetic test asset (AUSD),
+> not USDC. The core contract, voucher protocol and tooling are implemented,
+> internally reviewed and covered by an automated test suite. The code has **not
+> had an independent external security audit**. Do not use it with assets of
+> value. Production components are specified and tracked as future work.
 
-## Full project design
+**Key technical documents:**
+[Architecture](docs/ARCHITECTURE.md) ·
+[Accounting model](docs/ARCHITECTURE.md#6-treasury-and-channel-data-model-and-accounting) ·
+[Voucher format](docs/voucher-format.md) ·
+[Security assumptions](docs/security-assumptions.md) ·
+[Production specification](docs/production-specification.md) ·
+[Future work](docs/FUTURE_WORK.md) ·
+[Benchmarks](docs/benchmarks.md)
 
-- **One treasury, many virtual channels.** Channels are records inside shared
-  infrastructure, avoiding a separate deployment and deposit for each relationship.
-- **Bounded exposure.** Each channel reserves its maximum liability. The full
-  design targets enforceable per-agent and per-provider budgets across channels;
-  these require aggregate accounting in addition to individual channel ceilings.
-- **Off-chain request payments.** Agents sign cumulative vouchers using delegated
-  keys. Providers verify each voucher and its payment increment before serving.
-- **Bounded batch settlement.** Providers or coordinators redeem claims across
-  multiple channels, paying only the amount owed beyond previous redemptions.
-- **Safe liquidity reuse.** Uncommitted or safely released funds can be reassigned
-  through contract accounting without transferring USDC between channel contracts.
-  Collateral backing outstanding claims remains reserved.
-- **Protected closure.** The planned lifecycle starts a claim period during which
-  providers can redeem outstanding vouchers before eligible remaining funds are
-  released or refunded. Providers must monitor and submit claims within the
-  protocol's defined window.
-- **Developer integration.** A planned TypeScript SDK and explicit Stellar x402
-  batch-settlement integration will support compatible clients and facilitators.
-  Voucher payments require scheme/adapter support and cannot be assumed compatible
-  with the existing `exact` implementation unchanged.
+## The problem
 
-Our vision is to make Stellar the network of choice for high-volume agent commerce.
-The [full vision and roadmap](docs/vision.md) describes the intended product;
-[architecture](docs/architecture.md) specifies the completed production design and
-clearly separates it from the implementation available today.
+AI agents make many small, usage-based purchases, often thousands a day across
+dozens of services. Paying each request on-chain adds latency and a transaction
+per request. Payment channels avoid that, but a channel is normally a separately
+funded contract for one payer–provider pair. An organization working with dozens
+of providers then splits its liquidity across dozens of channels, operates each one
+separately, settles each provider in its own transaction, and still needs a way to
+give agents spending authority without exposing the whole treasury.
 
-## Implemented PoC
+## How it works
 
-> The current code is a limited Stellar Testnet proof of concept using synthetic
-> AUSD, not USDC. It has internal review and regression tests, but no independent
-> external security audit. Do not use it with assets of value.
-
-The PoC implements one treasury per deployment, independently reserved channels,
-real Ed25519 cumulative vouchers, provider-side verification and durable voucher
-stores, atomic settlement of 1–4 channels, incremental redemption, and owner
-withdrawal of unallocated funds. It enforces per-channel allocations; aggregate
-agent/provider budgets, channel closure, collateral recycling and x402 integration
-remain planned work.
-
-Its distinguishing architecture was demonstrated by one 100 AUSD deposit backing
-three channels of 40 / 35 / 15 AUSD. Agents completed 11 simulated paid requests
-with no transaction submissions during those requests. One batch then paid
-12 / 8 / 5 AUSD to the three providers.
-
-## PoC and execution evidence
-
-The committed archive describes the **24 October 2026 run**:
-
-- Public deployment metadata and build fingerprint:
-  [deployments/testnet/manifest.json](deployments/testnet/manifest.json).
-- Transaction hashes, raw envelope/result/metadata XDR, channel records and scenario
-  assertions: [deployments/testnet/evidence.json](deployments/testnet/evidence.json).
-  This run contains **22 transactions: 19 successful and 3 intentionally failed**.
-- Recorded resource and fee measurements:
-  [docs/benchmarks/testnet-resources.json](docs/benchmarks/testnet-resources.json).
-- Accounting invariants and security findings:
-  [accounting](docs/accounting-invariants.md),
-  [security assumptions](docs/security-assumptions.md), and
-  [review findings](docs/review-findings.md).
-
-Public links for that committed run:
-
-- Demo treasury:
-  https://stellar.expert/explorer/testnet/contract/CCNFYVZNOP7TK4BK4PMF36FU7UXC4SN4G6LQWTQ3CBLAR4EBDT4YKMGJ
-- Three-provider batch, paying 12 / 8 / 5 AUSD:
-  https://stellar.expert/explorer/testnet/tx/cf74ff58182bfd6db9be07d3b0601191bd58f4b759172422a52d53d4b82dd2c2
-- Incremental redemption, cumulative 17 AUSD paying an additional 5:
-  https://stellar.expert/explorer/testnet/tx/8b707294e93897e3a5ca226ecc7de0767cd9bef299855a5ec6e6d3838a18f7e6
-- Replayed batch rejected on-chain:
-  https://stellar.expert/explorer/testnet/tx/ee90afe38c405ac89aaf8cff0e932c007b84137b3a257bcbf41d18dffc75fa8f
-
-An additional **25 October 2026 reproduction** exercised the reorganized tooling
-with fresh accounts and contracts. Its public transaction references are separate
-from the committed 24 October archive:
-
-- Demo treasury:
-  https://stellar.expert/explorer/testnet/contract/CAG47O2YYEFW4RR6RXUCUN4H3JMCDWSXFNSKVSAQJ4PSFUZ5PS7EAXNF
-- Shared deposit of 100 AUSD:
-  https://stellar.expert/explorer/testnet/tx/454dbd2589fc87a1463af2ada09fdac11b9a1c814fe7eadb60a1d881742c1d43
-- Three-provider batch:
-  https://stellar.expert/explorer/testnet/tx/106aeba342fb9b120056dda94447509241067a0b441a374a37bbdc1f60c6cd5f
-- Incremental redemption:
-  https://stellar.expert/explorer/testnet/tx/7cc412ada3bfdebb8ad2dd0045760acd48ca578441748f89ddd1583bcdc59666
-- Above-allocation voucher rejected:
-  https://stellar.expert/explorer/testnet/tx/8d275765678190f4dceed7f244b46cc5b88d2105338112b1d5abc835fb25e5c3
-- Cross-channel voucher rejected:
-  https://stellar.expert/explorer/testnet/tx/9ea31ea897369f2e7d0630be1bfc9c24d27694db8203e029ec32ba68689b8a4e
-- Replayed batch rejected:
-  https://stellar.expert/explorer/testnet/tx/1ddc4f1d0c7ce779e458a5c03b242970593e1c240bfd2ee17f17073f68f0cacf
-- Baseline treasury withdrawal, limited to 10 unallocated AUSD:
-  https://stellar.expert/explorer/testnet/tx/e6402300b428add6bc8535920baec4740edc195cc730b2ea092dcc6a389017b3
-
-The committed benchmark measured 22,294 stroops for a three-provider redemption
-versus 32,898 for three separate redemptions: approximately **32.23% lower
-settlement fees for that workload**. This measures redemption fees; deployment,
-channel rent and other lifecycle costs are separate. Resource limits declared
-from simulation are labeled separately from fees actually charged.
-
-The optimized WASM is 17,001 bytes, SHA-256:
-
-```text
-ab37537a6f65418bc968c4133ca9e9700d3980fd5a5915967e5914ce53068a04
+```mermaid
+flowchart LR
+    O["Organization"] -->|"1 deposit"| T["Treasury contract"]
+    T -->|"2 reserve collateral<br/>per provider channel"| C["Channels A · B · C"]
+    AG["AI agent"] -->|"3 signed cumulative voucher<br/>per request (off-chain)"| P["Provider"]
+    P -->|"4 verify locally, then serve"| AG
+    P -->|"5 latest vouchers"| K["Anyone: provider or coordinator"]
+    K -->|"6 one batch transaction"| T
+    T -->|"7 pay each provider<br/>only the new amount owed"| P
 ```
 
-Use `pnpm evidence:check` for offline consistency, payout and fee checks. Use
-`pnpm evidence:verify` for read-only network reconciliation while the endpoint
-retains the transaction records. Local consistency checks do not authenticate
-files against the network. See [verification tooling](tools/evidence/README.md).
+| Building block | What it means |
+|---|---|
+| **Shared treasury** | One Soroban contract per organization and payment asset holds the deposit and all accounting. |
+| **Virtual channels** | A channel is a record inside the treasury, not a separate contract or account. It binds one provider address and one delegated agent key, and reserves a fixed allocation. |
+| **Cumulative vouchers** | The agent signs "this provider may claim up to *X* in total on this channel". Each new voucher replaces the previous one. Providers verify it locally, with no transaction per request. |
+| **Batch settlement** | Anyone can submit the latest vouchers of up to four channels in one transaction. Each provider is paid `voucher − already redeemed`, and the batch is all-or-nothing. |
 
-## Repository layout
+## Technical features
+
+**Implemented**
+
+- **Soroban treasury contract** ([source](contracts/agentbatch-poc/src/lib.rs)):
+  owner-authorized deposit, channel opening and withdrawal; permissionless
+  redemption that can only pay each channel's stored provider; checked `i128`
+  arithmetic; all accounting written before any token transfer; immutable code
+  with no upgrade or administrator path.
+- **Exact collateral accounting**: allocations move funds from *available* to
+  *reserved*; only available funds can be withdrawn; deposits are credited only
+  when the treasury's token balance rises by exactly the amount, which rejects
+  fee-on-transfer tokens.
+- **Domain-separated Ed25519 vouchers** ([format](docs/voucher-format.md)):
+  canonical XDR binding network, contract, owner, channel, provider, signer and
+  cumulative amount. The contract rebuilds every field from storage, so callers
+  submit only channel, amount and signature. Verification follows the Soroban
+  host's strict `verify_strict` rule.
+- **Replay and isolation protection**: stale or replayed vouchers, vouchers above
+  their channel's allocation, and vouchers moved to another channel, contract or
+  network are rejected.
+- **Provider-side verification** ([library](packages/voucher/src/index.ts)):
+  byte-identical TypeScript encoding (enforced by shared Rust/TypeScript vectors),
+  pinning of contract code hash and asset, safe-key checks, and fail-closed,
+  deployment-scoped voucher stores.
+- **Soroban storage discipline**: one persistent entry per channel, instance-only
+  TTL extension (the shared WASM entry is never extended per call), and contract
+  error codes distinct from Stellar Asset Contract codes.
+- **Reproducible evidence**: CI rebuilds the optimized WASM and requires the
+  deployed hash. Raw Testnet transaction XDR is archived and can be re-verified
+  offline or against RPC ([evidence tool](tools/evidence/README.md)).
+
+**Planned** (each tracked with acceptance criteria in [FUTURE_WORK.md](docs/FUTURE_WORK.md))
+
+- Aggregate per-agent and per-provider budgets across channels.
+- Protected channel closure with a fixed claim window, allocation top-ups and
+  signer replacement through new channels.
+- Durable agent signing counters and transactional provider acceptance services.
+- Settlement coordinator, TTL and deadline keeper, indexer with archive and API.
+- Production TypeScript SDK, Treasury Console, and MPP and x402 payment adapters.
+- Independent security assessment and Mainnet deployment with an admitted USDC asset.
+
+## Use cases
+
+| Use case | How AgentBatch fits |
+|---|---|
+| **High-frequency AI inference** | Each model call carries a voucher for the next cumulative amount; the provider serves immediately and settles periodically. |
+| **One agent, many APIs** | One treasury funds separate channels to inference, search, data and compute providers, each with its own limit. |
+| **Enterprise agent fleets** | Each agent gets bounded, delegated payment authority without access to the treasury; finance teams see allocated, settled and available funds in one place. |
+| **Agent-to-agent services** | A coordinating agent pays specialist agents for retrieval, verification or tool execution; their claims settle together. |
+| **Tool and API marketplaces** | A marketplace manages collateral and settlement for many independent tool providers through shared infrastructure. |
+| **Metered evaluation and compute** | Usage-priced services such as evaluation runs or GPU time are paid as consumed, with exposure capped by the channel allocation. |
+
+More detail: [vision §10](docs/vision.md#10-main-use-cases).
+
+## Utility for Stellar
+
+- **New settlement demand for Stellar assets.** Organizations can hold operating
+  treasuries in Stellar USDC (the production target) to pay AI services, which
+  brings recurring, usage-driven settlement to the network.
+- **Fewer, denser settlement transactions.** Thousands of off-chain payments
+  collapse into periodic batched settlements. In the recorded workload, one
+  three-provider batch cost 32.23% less in fees than three separate settlements
+  ([benchmarks](docs/benchmarks.md)).
+- **A reusable primitive for payment facilitators.** MPP and x402 facilitators,
+  wallets and agent platforms can integrate one shared, open treasury and
+  settlement contract instead of building bespoke escrow for each integration.
+- **Builds on existing Stellar work.** The voucher encoding follows the commitment
+  convention of Stellar's one-way channel and MPP SDK, and the treasury uses the
+  native Stellar Asset Contract, so it complements rather than replaces existing
+  payment flows.
+- **Bounded risk for institutional users.** Per-channel collateral and
+  provider-bound payouts, plus the planned aggregate budgets, give organizations
+  explicit, verifiable spending limits for autonomous agents.
+
+More detail: [vision §12](docs/vision.md#12-utility-for-stellar).
+
+## The financial guarantee
+
+The treasury tracks deposits, withdrawals, payouts, **available** funds and
+**reserved** funds. Opening a channel moves its allocation from available to
+reserved. Only available funds can be withdrawn, and reserved funds can only be
+paid to the channel's own provider. A provider never accepts a voucher above its
+channel's allocation. So **every voucher a provider has accepted is backed by tokens
+already held in the treasury**, even if the owner withdraws everything it is
+allowed to and other channels are fully spent. The only exceptions are outside the
+contract's control: the asset issuer freezing a provider or clawing back the
+treasury's balance.
+
+The contract maintains, and the test suite asserts after every operation:
 
 ```text
-contracts/agentbatch-poc/    Soroban contract, native and compiled-WASM tests
-packages/voucher/           Reusable encoding, signing, verification and voucher stores
-tools/testnet/              Deployment, provider simulation, settlement and benchmarks
-tools/evidence/             Offline archive checks and read-only RPC verification
-examples/offline-payments/  Runnable local signing and verification example
-test-vectors/              Shared Rust/TypeScript protocol compatibility fixtures
-deployments/testnet/        Committed historical evidence and isolated local runs
-docs/                      Architecture, protocol, security and execution documentation
-scripts/                   Thin command compatibility wrappers
-.github/                   CI and contribution templates
+deposited − paid − withdrawn = available + reserved
+reserved  = Σ (allocation − redeemed)      over all channels
+paid      = Σ redeemed
+available = deposited − withdrawn − Σ allocation
+token balance ≥ available + reserved
 ```
 
-## Contract interface
+Replays pay nothing: a voucher at or below the amount already redeemed is
+rejected. The full model, including how vouchers held off-chain relate to
+allocations, settled amounts and withdrawable funds, is in
+[ARCHITECTURE §6](docs/ARCHITECTURE.md#6-treasury-and-channel-data-model-and-accounting).
 
-- `__constructor(owner, token)`: owner-authorized, permanently binds owner and
-  the seven-decimal payment token.
-- `deposit(amount)`: owner funds the treasury.
-- `open_channel(provider, signer_key, allocation)`: owner reserves channel collateral.
-- `redeem_batch(vouchers)`: anyone may settle 1–4 channels; recipients come from storage.
-- `withdraw_available(amount)`: owner withdraws unallocated funds only.
-- `get_treasury()`, `get_channel(id)`, `voucher_message(id, amount)`: read-only views.
+## Demonstrated on Stellar Testnet
 
-See [docs/architecture.md](docs/architecture.md) and
-[docs/voucher-format.md](docs/voucher-format.md).
+The committed archive records one complete run:
+
+| Step | Result |
+|---|---|
+| Shared funding | One deposit of 100 AUSD into a single treasury contract |
+| Independent channels | Three channels of 40 / 35 / 15 AUSD reserved inside that contract, 10 AUSD left available |
+| Off-chain payments | 11 simulated paid requests verified by the providers, with no transactions submitted |
+| Batch settlement | [One transaction](https://stellar.expert/explorer/testnet/tx/cf74ff58182bfd6db9be07d3b0601191bd58f4b759172422a52d53d4b82dd2c2) paid 12 / 8 / 5 AUSD to three providers |
+| Incremental redemption | [A later cumulative voucher for 17](https://stellar.expert/explorer/testnet/tx/8b707294e93897e3a5ca226ecc7de0767cd9bef299855a5ec6e6d3838a18f7e6) paid only the extra 5 |
+| Attacks submitted on-chain | A voucher above its channel's allocation, a voucher replayed on another provider's channel and a [replayed batch](https://stellar.expert/explorer/testnet/tx/ee90afe38c405ac89aaf8cff0e932c007b84137b3a257bcbf41d18dffc75fa8f) all failed with the expected errors |
+| Withdrawal | The owner withdrew exactly the 10 unallocated AUSD; reserved funds stayed untouched |
+| Cost | One three-provider batch cost 22,294 stroops in fees, against 32,898 for three separate settlements (32.23% less, for this workload only) |
+
+The archive contains 22 transactions (19 successful, 3 intentionally failed) with
+their raw XDR: [manifest](deployments/testnet/manifest.json),
+[evidence](deployments/testnet/evidence.json),
+[measurements](docs/benchmarks/testnet-resources.json). The demo treasury is
+[`CCNFYVZN…KMGJ`](https://stellar.expert/explorer/testnet/contract/CCNFYVZNOP7TK4BK4PMF36FU7UXC4SN4G6LQWTQ3CBLAR4EBDT4YKMGJ).
+The optimized WASM is 17,001 bytes with SHA-256
+`ab37537a6f65418bc968c4133ca9e9700d3980fd5a5915967e5914ce53068a04`.
+
+A second reproduction with the reorganized tooling used fresh accounts and
+contracts; its records are not committed, but its transactions are public:
+[treasury](https://stellar.expert/explorer/testnet/contract/CAG47O2YYEFW4RR6RXUCUN4H3JMCDWSXFNSKVSAQJ4PSFUZ5PS7EAXNF),
+[deposit](https://stellar.expert/explorer/testnet/tx/454dbd2589fc87a1463af2ada09fdac11b9a1c814fe7eadb60a1d881742c1d43),
+[batch](https://stellar.expert/explorer/testnet/tx/106aeba342fb9b120056dda94447509241067a0b441a374a37bbdc1f60c6cd5f),
+[incremental redemption](https://stellar.expert/explorer/testnet/tx/7cc412ada3bfdebb8ad2dd0045760acd48ca578441748f89ddd1583bcdc59666),
+[above-allocation rejection](https://stellar.expert/explorer/testnet/tx/8d275765678190f4dceed7f244b46cc5b88d2105338112b1d5abc835fb25e5c3),
+[cross-channel rejection](https://stellar.expert/explorer/testnet/tx/9ea31ea897369f2e7d0630be1bfc9c24d27694db8203e029ec32ba68689b8a4e),
+[replay rejection](https://stellar.expert/explorer/testnet/tx/1ddc4f1d0c7ce779e458a5c03b242970593e1c240bfd2ee17f17073f68f0cacf),
+[withdrawal](https://stellar.expert/explorer/testnet/tx/e6402300b428add6bc8535920baec4740edc195cc730b2ea092dcc6a389017b3).
+
+The providers and agents in these runs are simulated; they are not production traffic.
 
 ## Quick start
 
 Requirements: Rust 1.94.1 with the `wasm32v1-none` target (pinned in
-`rust-toolchain.toml`), Stellar CLI 26.0.0, Node ≥ 22.12 (tested with 22.13.1), pnpm 10.19.0.
+`rust-toolchain.toml`), Stellar CLI 26.0.0, Node ≥ 22.12 and pnpm 10.19.0.
 
 ```bash
-# Install exact dependencies, build and run all offline checks
+# Install exact dependencies, build, and run every offline check
 pnpm install --frozen-lockfile
 pnpm build
 pnpm check
 
-# Try the signing and verification flow without network access
+# See the payment flow without network access
 pnpm example:offline
 
-# Deploy disposable accounts/contracts and run the Testnet demonstration
+# Deploy disposable accounts and contracts and run the Testnet demonstration
 pnpm testnet:demo
 
-# Check archived evidence locally, or reconcile the selected run with Testnet RPC
+# Check archived evidence offline, or reconcile it with Testnet RPC
 pnpm evidence:check
 pnpm evidence:verify
 ```
 
-Each Testnet invocation creates a unique `deployments/testnet/runs/<run-id>/`
-directory and fresh disposable keys under `.secrets/testnet/`. Provider state
-lives under `.state/testnet/<run-id>/`. Both private directories are gitignored.
-Existing runs are never reused. The original committed archive is the default;
-an optional local `deployments/testnet/index.json` can select additional runs.
+`pnpm check` runs formatting, Clippy, type checking, the optimized-WASM contract
+tests, all TypeScript suites, the archive checks and the offline example. On
+machines with little memory, see [CONTRIBUTING.md](CONTRIBUTING.md) for
+lower-parallelism settings.
 
-See the [Testnet tooling](tools/testnet/README.md) and
-[evidence verifier](tools/evidence/README.md) for commands and run selection. `make all` remains a shortcut for
-installation, building and offline validation.
+Each Testnet run writes a new `deployments/testnet/runs/<run-id>/` directory and
+uses fresh disposable keys under `.secrets/testnet/`; provider state lives under
+`.state/testnet/<run-id>/`. Both private directories are gitignored. See the
+[Testnet tooling](tools/testnet/README.md) and the
+[evidence verifier](tools/evidence/README.md).
 
-## Documentation
+## Contract interface
 
-- [Vision and roadmap](docs/vision.md): complete product design and development objectives.
-- [Architecture](docs/architecture.md): full production design with an explicit PoC baseline.
-- [SDK reference](docs/sdk.md): existing exports, exact amounts and proposed public interfaces.
-- [Operations](docs/production-operations.md): deployment acceptance, monitoring and recovery.
-- [Maintenance and releases](docs/maintenance.md): governance, ownership gaps, supply chain and artifacts.
-- [Decision records](docs/decisions.md): proposed production tradeoffs and their consequences.
-- [Voucher format](docs/voucher-format.md): exact signed encoding and domain binding.
-- [Accounting invariants](docs/accounting-invariants.md): collateral and payout rules.
-- [Security assumptions](docs/security-assumptions.md): threat model and implementation limits.
-- [Benchmarks](docs/benchmarks.md): recorded resource and fee measurements.
-- [Specification review](docs/poc-spec-review.md): implementation decisions.
-- [Review findings](docs/review-findings.md): security corrections and regression coverage.
-- [Earlier internal review](docs/audit-report.md): historical review findings.
-- [Contributing](CONTRIBUTING.md), [security reporting](SECURITY.md) and
-  [community conduct](CODE_OF_CONDUCT.md): participation and support policies.
+| Function | Who | Effect |
+|---|---|---|
+| `__constructor(owner, token)` | owner | Binds the owner and the 7-decimal payment token permanently |
+| `deposit(amount)` | owner | Adds funds as available |
+| `open_channel(provider, signer_key, allocation)` | owner | Reserves `allocation` for one provider and one agent key |
+| `redeem_batch(vouchers)` | anyone | Settles 1–4 channels; payouts go only to the stored providers |
+| `withdraw_available(amount)` | owner | Withdraws available funds; reserved funds can never be withdrawn |
+| `get_treasury()`, `get_channel(id)`, `voucher_message(id, amount)` | anyone | Read-only views |
 
-## Scope
+Details: [contract architecture](docs/ARCHITECTURE.md#4-on-chain-component-architecture),
+[voucher format](docs/voucher-format.md) and the
+[implemented contract specification](docs/production-specification.md#3-implemented-contract-specification).
 
-The PoC deliberately leaves out channel closure and dispute periods,
-revocation, signer rotation, collateral reallocation, multi-tenant treasuries,
-keeper incentives, netting, MPP and x402 adapters, a production SDK, a
-Treasury Console, upgradeability, and Mainnet deployment. These are the
-technical roadmap (see [docs/vision.md](docs/vision.md)).
+## Repository layout
 
-Building on prior Stellar work: the voucher encoding follows the commitment
-convention of
-[stellar-experimental/one-way-channel](https://github.com/stellar-experimental/one-way-channel)
-and the [Stellar MPP SDK](https://github.com/stellar/stellar-mpp-sdk).
+```text
+contracts/agentbatch-poc/    Soroban contract with native and compiled-WASM tests
+packages/voucher/            Voucher encoding, signing, verification and stores
+tools/testnet/               Testnet deployment, provider simulation, settlement, benchmarks
+tools/evidence/              Offline archive checks and read-only RPC verification
+examples/offline-payments/   Runnable local signing and verification example
+test-vectors/                Shared Rust/TypeScript compatibility fixtures
+deployments/testnet/         Committed Testnet evidence
+docs/                        Architecture, protocol, security and operations documentation
+scripts/                     Thin command wrappers
+.github/                     CI and contribution templates
+```
 
-## License
+## Technical documentation
 
-[Apache-2.0](LICENSE)
+| Document | Read it to |
+|---|---|
+| [Architecture](docs/ARCHITECTURE.md) | Understand the complete platform: components, accounting model, workflows, trust boundaries, scalability, implementation status |
+| [Voucher format](docs/voucher-format.md) | Implement or verify vouchers byte for byte, with test vectors |
+| [Accounting invariants](docs/accounting-invariants.md) | Check the PoC's collateral and payout rules and how they are tested |
+| [Security assumptions](docs/security-assumptions.md) | Review actors, guarantees, assumptions and the production threat model |
+| [Production specification](docs/production-specification.md) | Read the detailed requirements: proposed ABI, closure, budgets, transactions, storage restoration, indexer, Console |
+| [SDK reference](docs/sdk.md) | Use the voucher library and see the planned SDK interfaces |
+| [Benchmarks](docs/benchmarks.md) | Inspect measured fees and resources, and their limits |
+| [Future work](docs/FUTURE_WORK.md) | Find every planned capability and open finding, with acceptance criteria |
+| [Decision records](docs/decisions.md) | Understand the main design trade-offs |
+| [Vision](docs/vision.md) | See the product goals, use cases and roadmap |
+| [Operations](docs/production-operations.md), [maintenance](docs/maintenance.md) | Plan production operation, governance and releases |
+| [Repository review](docs/repository-review.md), [review findings](docs/review-findings.md), [earlier review](docs/audit-report.md), [specification review](docs/poc-spec-review.md) | Trace internal reviews, their findings and verification |
+
+## Relationship to the Stellar ecosystem
+
+AgentBatch builds on existing Stellar payment work. Its voucher encoding follows
+the commitment convention of Stellar's
+[one-way channel](https://github.com/stellar-experimental/one-way-channel) and the
+[Stellar MPP SDK](https://github.com/stellar/stellar-mpp-sdk), extended with the
+channel, owner, provider and signer bindings that a shared treasury needs. It
+complements the [x402 `exact` scheme](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_stellar.md),
+which settles each payment on-chain. AgentBatch vouchers are not interchangeable
+with those formats; MPP and x402 adapters are planned work.
+
+## Contributing, security and license
+
+- [Contributing](CONTRIBUTING.md) and [code of conduct](CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md): report vulnerabilities privately, not in public issues
+- License: [Apache-2.0](LICENSE)

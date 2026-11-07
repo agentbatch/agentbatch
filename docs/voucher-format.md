@@ -100,6 +100,7 @@ requires a new domain value.
 | Replay on another deployment | `contract` from the environment | `wrong_contract_rejected`, `voucher_for_other_deployment_rejected` |
 | Replay on another channel, even with the same key and provider | `channel_id` | `cross_channel_replay_rejected` |
 | Payment to another provider | `provider` from storage; payout goes to the stored provider | `wrong_provider_rejected` |
+| Replay against another treasury owner | `owner` from storage | `wrong_owner_rejected` |
 | Signing with an unregistered key | `signer` from storage | `incorrect_signer_rejected`, `signer_field_substitution_rejected` |
 | Confusion with other signed payloads | `domain` symbol | `wrong_domain_rejected` |
 | Amount tampering | `amount` is signed | `amount_substitution_rejected` |
@@ -123,15 +124,14 @@ The PoC has no claim expiration or close function. Proposed production closure
 therefore cannot prove that a voucher was signed before close-start; it honors
 valid claims that execute successfully at or before the contract deadline
 ledger and releases funds afterward. Earlier RPC submission alone does not
-preserve an unexecuted claim. See [architecture](architecture.md#4-production-contract-and-lifecycle-design).
+preserve an unexecuted claim. See the [production specification](production-specification.md#4-production-contract-and-lifecycle-design).
 The proposed `AGENTBATCH_V1` production domain retains the eight-field layout
 with a different domain symbol and needs new frozen vectors. It is not
 implemented. Preserve this reference for PoC v1 evidence; do not relabel its
 bytes as another protocol version.
 
-
 The proposed service adapter authenticates request body, quote, request ID and
 client delivery identity separately from the payment voucher; see
-[authenticated service requests](architecture.md#authenticated-service-requests).
+[authenticated service requests](production-specification.md#authenticated-service-requests).
 Neither possession of a valid voucher nor a guessed request ID grants access to
 service/results. This is not functionality of the implemented PoC wire format.

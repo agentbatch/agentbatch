@@ -1,5 +1,9 @@
 # Treasury Accounting Invariants
 
+This is the PoC-level reference. The complete accounting model, including how
+off-chain vouchers relate to allocations, settled amounts and withdrawable funds,
+is in [ARCHITECTURE §6](ARCHITECTURE.md#6-treasury-and-channel-data-model-and-accounting).
+
 All amounts are `i128` base units of a 7-decimal Stellar Asset Contract
 (1 AUSD = 10,000,000). Every addition and subtraction in state-changing
 functions is checked (`checked_add` / `checked_sub` → `ArithmeticOverflow`).
@@ -40,6 +44,9 @@ eligible outstanding vouchers throughout its defined claim period.
 | I8 | No repeated payout | Payout is `v − redeemed`, and `redeemed := v`; resubmitting `v` or any lower amount fails with `StaleVoucher`. |
 | I9 | Unaccounted tokens are never credited | `available` is credited only through `deposit` in the PoC; allocation and withdrawal decrease it. `get_treasury` reports `unaccounted_balance` separately. |
 | I10 | Failed operations change nothing | Any error or trap reverts the whole invocation, including token transfers. |
+| I11 | `total_paid = Σ redeemed` | `redeemed` starts at 0 and grows by exactly each payout. |
+| I12 | `Σ allocation = total_reserved + total_paid` | I3 and I11. |
+| I13 | `available = total_deposited − total_withdrawn − Σ allocation` | I1 and I12: withdrawable funds are what was never allocated; payouts never change them. |
 
 Collateral consequence for providers: because a channel's allocation is
 reserved when it opens and the PoC has no way to reduce it, any voucher with
@@ -51,7 +58,7 @@ clawback).
 
 | Method | Where |
 |---|---|
-| `Setup::assert_invariants` checks I1–I5 against stored state and the real SAC balance | [`test/mod.rs`](../contracts/agentbatch-poc/src/test/mod.rs) |
+| `Setup::assert_invariants` checks I1–I5 and I11–I13 against stored state and the real SAC balance | [`test/mod.rs`](../contracts/agentbatch-poc/src/test/mod.rs) |
 | Model-based randomized test: 5 seeds × 250 random deposits, channel openings, batches (valid, stale, over-ceiling), withdrawals and unsolicited transfers. Compares state with an independent model after every step and checks that failed steps changed nothing and paid no provider. | `accounting::randomized_transitions_preserve_invariants` |
 | Targeted tests for I5–I9 | `deposit_credits_only_what_arrives`, `over_allocation_rejected`, `channel_isolation`, `withdrawal_limited_to_unallocated_funds`, `cumulative_vouchers_pay_only_increment`, `unsolicited_transfers_are_not_credited`, `deposit_overflow_rejected` |
 | Atomicity (I10) | `batch::*_reverts_whole_batch`, `failed_asset_transfer_reverts_whole_batch`, `wasm::wasm_batch_failure_is_atomic` |
@@ -72,7 +79,7 @@ from Testnet in [archived Testnet records](../deployments/testnet/evidence.json)
 
 ## Production accounting extension
 
-The [primary architecture](architecture.md#4-production-contract-and-lifecycle-design)
+The [primary architecture](production-specification.md#4-production-contract-and-lifecycle-design)
 defines proposed release accounting: `remaining = allocation - redeemed - released`,
 with finalization moving remaining reservation back to available exactly once.
 Aggregate budgets track lifetime spent plus outstanding reservation; redemption

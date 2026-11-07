@@ -1,20 +1,21 @@
-# Pre-Implementation Review of the PoC Specification
+# PoC Specification Review
 
-The PoC brief was reviewed against the Soroban SDK, the Stellar one-way channel
+The PoC requirements brief (summarized in [vision §15](vision.md#15-initial-proof-of-concept--intentionally-limited-scope);
+section numbers below refer to the brief itself) was reviewed against the Soroban SDK, the Stellar one-way channel
 contract, the Stellar MPP SDK and the live Testnet before any code was written.
 This document records where the brief needed interpretation and what was
 decided. Each item links to the code or test that implements the decision.
 
 ## Environment findings
 
-These are historical observations from the 24 October 2026 implementation
-review. Version references here describe that environment, rather than current
-release recommendations.
+These are historical observations from the implementation review. Version
+references here describe that environment, rather than current release
+recommendations.
 
 | # | Finding | Decision |
 |---|---|---|
 | E1 | Installed: rustc 1.94.1, stellar CLI 26.0.0, soroban-sdk 27.0.6 (local cache). The latest crates.io release was 29.0.1; Testnet runs protocol 29. | Kept **27.0.6**, following "no unnecessary upgrades". A contract built with SDK 27 runs on protocol 29, as the Testnet run confirms. |
-| E2 | `@stellar/stellar-sdk` 17.3.0 was 3 days old. | Pinned **17.2.1** (released 2026-10-01). TypeScript 6.0.3, vitest 4.1.11, tsx 4.23.15: all exact versions. |
+| E2 | `@stellar/stellar-sdk` 17.3.0 had only just been released. | Pinned **17.2.1**, the preceding release. TypeScript 6.0.3, vitest 4.1.11, tsx 4.23.15: all exact versions. |
 | E3 | soroban-sdk ≥ 23 emulates automatic restoration of archived entries in tests (protocol 23 behavior). "Archived channel" therefore cannot be tested as an access error. | The tests assert exact TTL values and that an archived channel is restored with its full state, so replay protection survives archival (`storage.rs`). |
 
 ## Specification items
@@ -33,7 +34,7 @@ release recommendations.
 | S10 | §10 compare against three separate redemptions with equal starting state | Testnet state cannot be rewound. | Two deployments of the same WASM with identical deposits, channels and amounts. |
 | S11 | §10 "do not claim 66%" | — | Measured −32.2% fee and −30.7% declared instructions for three vouchers (latest run). |
 | S12 | §11 no closure, so unused collateral stays locked | — | Documented; test assets only. |
-| S13 | §8 provider vouchers and the 17 AUSD incremental step | The agent must continue from the redeemed amount after settlement. | `ChannelSpender` starts from the on-chain `redeemed`; the provider rechecks against both its store and the on-chain amount. |
+| S13 | §8 provider vouchers and the 17 AUSD incremental step | The agent must continue from its last amount after settlement. | In the controlled demo every accepted voucher was redeemed first, so `ChannelSpender` starts from the on-chain `redeemed`. In general an agent must restart from the highest amount it ever signed, not from `redeemed` ([ARCHITECTURE §6.5](ARCHITECTURE.md#65-vouchers-allocations-settlement-and-withdrawal), FW-SDK-03). The provider rechecks against both its store and the on-chain amount. |
 
 ## Scope check
 

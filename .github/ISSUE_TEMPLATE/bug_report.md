@@ -4,7 +4,7 @@ about: Report incorrect behavior (not security vulnerabilities — see SECURITY.
 labels: bug
 ---
 
-**Component:** contract / sdk / coordinator / provider / docs
+**Component:** contract / voucher library / Testnet tooling / evidence verifier / offline example / docs
 
 **What happened**
 

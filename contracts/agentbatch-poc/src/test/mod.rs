@@ -293,14 +293,29 @@ impl Setup {
             t.available + t.total_reserved,
             "conservation invariant"
         );
-        let mut sum_remaining = 0;
+        let (mut sum_remaining, mut sum_redeemed, mut sum_allocation) = (0, 0, 0);
         for id in 1..t.next_channel_id {
             let c = self.client.get_channel(&id);
             assert!(0 <= c.redeemed && c.redeemed <= c.allocation, "channel {id} bounds");
             assert_eq!(c.remaining, c.allocation - c.redeemed);
             sum_remaining += c.remaining;
+            sum_redeemed += c.redeemed;
+            sum_allocation += c.allocation;
         }
         assert_eq!(sum_remaining, t.total_reserved, "sum of reservations");
+        // Settled amounts are exactly the channels' cumulative redemptions, and
+        // withdrawable funds are what was never allocated to any channel.
+        assert_eq!(sum_redeemed, t.total_paid, "payouts equal sum of redeemed");
+        assert_eq!(
+            sum_allocation,
+            t.total_reserved + t.total_paid,
+            "allocations equal reserved plus paid"
+        );
+        assert_eq!(
+            t.available,
+            t.total_deposited - t.total_withdrawn - sum_allocation,
+            "available equals deposits minus withdrawals minus allocations"
+        );
         assert!(t.token_balance >= t.available + t.total_reserved, "solvency");
         assert_eq!(t.token_balance, self.balance(&self.contract));
     }
