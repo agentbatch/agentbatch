@@ -1,7 +1,7 @@
 # Production operations and recovery
 
 This is the operational specification for the proposed
-[production architecture](architecture.md), not evidence of running services.
+[production architecture](ARCHITECTURE.md) and [specification](production-specification.md), not evidence of running services.
 The current runner deploys disposable Testnet contracts; it does not install a
 coordinator, indexer, keeper, monitoring system or production signer.
 

@@ -2,6 +2,22 @@
 
 ## Unreleased — Architecture, infrastructure and PoC review follow-up
 
+- Added [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the complete platform
+  architecture, with an explicit accounting model linking cumulative vouchers,
+  channel allocations, settled amounts and withdrawable funds; eight diagrams;
+  workflows, trust boundaries and a source-referenced implementation matrix.
+  The previous primary document is preserved, unchanged in substance, as
+  [docs/production-specification.md](docs/production-specification.md).
+- Added [docs/FUTURE_WORK.md](docs/FUTURE_WORK.md), consolidating every unresolved
+  finding and planned capability with priority, dependencies and acceptance
+  criteria, and [docs/repository-review.md](docs/repository-review.md) with
+  findings and verification results.
+- The contract invariant suite now also asserts `total_paid = Σ redeemed`,
+  `Σ allocation = total_reserved + total_paid` and
+  `available = total_deposited − total_withdrawn − Σ allocation`. Contract logic
+  and the deployed artifact are unchanged.
+- Documented low-memory build settings.
+
 - Specified the full production architecture, lifecycle, aggregate budgets, SDK,
   Console, indexer, transaction recovery and operations with explicit implementation
   boundaries. Added governance, contribution, conduct and release requirements,
@@ -33,7 +49,7 @@
 - Runtime contract logic, voucher format, dependency versions and historical
   Testnet records are unchanged.
 
-## 0.2.0 — 2026-10-25 — second internal review
+## 0.2.0 — second internal review
 
 Every finding and fix is listed in [docs/review-findings.md](docs/review-findings.md).
 
@@ -63,7 +79,7 @@ Every finding and fix is listed in [docs/review-findings.md](docs/review-finding
   freshness, invalid-signature vectors, exact error assertions).
 - TypeScript: 93 tests.
 
-## 0.1.0 — 2026-10-24 — proof of concept
+## 0.1.0 — proof of concept
 
 ### Added
 

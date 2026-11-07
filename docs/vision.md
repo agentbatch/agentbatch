@@ -3,9 +3,9 @@
 
 > This is the full product vision. The proof of concept in this repository
 > implements only the scope described in §15; everything else is planned work.
-> The [primary architecture](architecture.md) specifies the completed design,
+> The [primary architecture](ARCHITECTURE.md) specifies the completed design,
 > including custody topology, budget semantics and protected closure.
-> See [archived Testnet records](../deployments/testnet/evidence.json) for the dated demonstration.
+> See [archived Testnet records](../deployments/testnet/evidence.json) for the recorded demonstration.
 
 ### 1. Project Overview
 
@@ -316,7 +316,7 @@ for presenting eligible existing claims. Providers, or authorized watchtowers,
 must monitor and secure successful claim execution by the deadline ledger. Only
 collateral no longer needed under those rules may return to available funds or be refunded. A low
 on-chain redeemed amount does not establish that no unredeemed vouchers exist.
-The [architecture](architecture.md#4-production-contract-and-lifecycle-design)
+The [architecture](production-specification.md#4-production-contract-and-lifecycle-design)
 specifies ledger boundaries, claim eligibility, release accounting and replacement
 channels for rotation. Vouchers cannot prove issuance time: a valid signed claim
 is eligible only if it executes successfully by the deadline ledger, and
@@ -540,7 +540,7 @@ The PoC demonstrates:
 
 The PoC intentionally excludes production channel closure, dynamic collateral recycling, multi-tenant treasury infrastructure, facilitator integration, a production Treasury Console, advanced clearing and mainnet deployment.
 
-The objective is to demonstrate that the fundamental architecture works on Stellar and that the team has the engineering expertise to deliver the remaining infrastructure.
+The objective is to demonstrate that the fundamental architecture works on Stellar.
 
 ### 16. Technical Roadmap
 
@@ -582,7 +582,7 @@ Develop:
 - Mainnet deployment.
 - Public usage and settlement analytics.
 
-These are proposed workstreams. Each stage needs explicit technical acceptance criteria, security review and reproducible validation before release.
+These are proposed workstreams. Each stage needs explicit technical acceptance criteria, security review and reproducible validation before release; the itemized backlog is in [FUTURE_WORK.md](FUTURE_WORK.md).
 
 
 ### 17. Success Criteria

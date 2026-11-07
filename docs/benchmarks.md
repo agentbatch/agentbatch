@@ -16,7 +16,7 @@ Two sources, reported separately:
 
 Tool versions: rustc 1.94.1, soroban-sdk 27.0.6, stellar CLI 26.0.0,
 @stellar/stellar-sdk 17.2.1, Node 22.13.1, Testnet protocol 29
-(stellar-rpc 30.0.0). Run of 2026-10-24 21:57 UTC.
+(stellar-rpc 30.0.0), as recorded for the archived run.
 
 ## Contract artifact
 
@@ -122,4 +122,4 @@ pnpm testnet:demo                                                              #
 ```
 
 Fresh Testnet measurements are written to `deployments/testnet/runs/<run-id>/benchmark.json`.
-The JSON measurements referenced above describe the dated historical run.
+The JSON measurements referenced above describe the historical archived run.

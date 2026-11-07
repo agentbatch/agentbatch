@@ -1,6 +1,6 @@
 # Architecture decision records
 
-These records explain the target choices in [architecture](architecture.md).
+These records explain the target choices in [architecture](ARCHITECTURE.md) and the [production specification](production-specification.md).
 “Proposed” means selected for this design and still requiring implementation and
 release review. Existing historical decisions remain in
 [poc-spec-review.md](poc-spec-review.md); historical findings remain separate.

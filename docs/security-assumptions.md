@@ -87,7 +87,6 @@ assets on Stellar Testnet only. Do not deposit funds of value.**
 - **No protected closure yet.** The proposed claim period and safe
   release rules are specified in the production architecture but remain
   unimplemented and require adversarial validation.
-
 - **Locked collateral.** There is no channel close or reallocation, so
   allocations that are never redeemed stay locked. Tokens sent directly to the
   contract are never credited and cannot be recovered.
@@ -106,11 +105,13 @@ Channel closure and dispute periods, signer rotation, revocation, collateral
 recycling, multi-tenancy, keeper incentives, netting, MPP and x402 adapters,
 passkeys, upgradeability, and Mainnet deployment.
 
-See [`audit-report.md`](audit-report.md) for the internal review findings.
+Internal review findings are in [repository-review.md](repository-review.md) (latest),
+[review-findings.md](review-findings.md) and [audit-report.md](audit-report.md) (earlier).
+Open items are tracked in [FUTURE_WORK.md](FUTURE_WORK.md).
 
 ## Production threat model and residual risks
 
-The [architecture](architecture.md) and [operations](production-operations.md)
+The [architecture](ARCHITECTURE.md#9-security-architecture), [production specification](production-specification.md) and [operations](production-operations.md)
 specify required mitigations; these are not deployed protections:
 
 | Abuse or failure | Required mitigation and remaining risk |

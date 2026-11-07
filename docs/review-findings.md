@@ -1,6 +1,6 @@
 # Second Internal Review — Findings and Fixes
 
-**Date:** 2026-10-25. **Scope:** contract, voucher package, Testnet tooling and
+**Scope:** contract, voucher package, Testnet tooling and
 CI, documentation. **Type:** internal review in four separate passes; **not an
 independent external audit.**
 
@@ -141,7 +141,7 @@ detail errors.
 - **Concurrency:** agent counters are not persisted, and provider stores are not concurrency-safe.
 - **Hosted CI:** check [GitHub Actions](https://github.com/agentbatch/agentbatch/actions) for results on the published revision; local validation is recorded separately.
 
-## PoC audit follow-up — 2026-10-25
+## PoC audit follow-up
 
 The subsequent internal review of `fe23cb8` verified the core PoC on public
 Testnet and identified four remaining provider or documentation findings.
@@ -185,7 +185,7 @@ The committed [original Testnet archive](../deployments/testnet/evidence.json)
 contains the transaction envelopes, results and metadata used by the offline
 verifier. Fresh reproduction writes separate run directories.
 
-## Repository structure validation — 2026-10-25
+## Repository structure validation
 
 Operational code now lives in `tools/testnet`; reusable voucher code remains in
 `packages/voucher`. The standalone `tools/evidence` workspace validates public
@@ -203,7 +203,7 @@ TypeScript tests, offline archive checks and the offline example. The contract
 suite contains 66 tests. Additional tests cover provider persistence, deployment
 binding, write-once runs, archive selection and tamper rejection.
 
-## Architecture and documentation review — 2026-11-05
+## Architecture and documentation review
 
 ### Scope and evidence
 
@@ -239,7 +239,7 @@ or operational release gate.
 
 | ID | Severity | Finding | Correction / owner document | Remaining requirement |
 |---|---|---|---|---|
-| DOC-01 | High | The primary architecture described only the PoC and deferred essentially all completed-product behavior. | Replaced with coherent full design, implementation matrix, topology, trust boundaries and ordered release gates in [architecture](architecture.md). | Implement and validate the proposed product before production admission. |
+| DOC-01 | High | The primary architecture described only the PoC and deferred essentially all completed-product behavior. | Replaced with coherent full design, implementation matrix, topology, trust boundaries and ordered release gates in [architecture](production-specification.md). | Implement and validate the proposed product before production admission. |
 | DOC-02 | High | Safe release/rotation and aggregate budget semantics were underspecified, allowing designs that free reserved claims or replenish a spending cap on redemption. | Fixed ledger-boundary closure, replacement channels, monotonic IDs, release accounting and spent+reserved budget invariants; aligned [vision](vision.md) and [accounting](accounting-invariants.md). | Choose/fund a measured claim window, implement guards and independent models/tests. |
 | DOC-03 | High | “Before closure” voucher eligibility could imply a signature-issuance time the wire format does not contain. | Explicitly honor any valid cumulative claim through D, including post-close signatures; document compromised-key exposure and late-claim loss. Proposed production domain uses a separately frozen specification. | Provider/watchtower monitoring, deadline drills and new vectors. |
 | DOC-04 | Medium | Automatic restoration wording omitted prepared restoration data/resources and could imply the demo recovers archived dependencies. | Qualified protocol behavior, dependency inventory and separate restoration/re-simulation; disclosed the runner's restore-preamble abort and native-test limitation. | Actual end-to-end restore/TTL/funding tests and keeper implementation. |
@@ -256,7 +256,7 @@ or operational release gate.
 
 ### Stellar reference verification
 
-Official references were consulted on 5 November 2026. They are living documents;
+Official references were consulted during this review. They are living documents;
 linking them does not pin the target network's configuration. Production admission
 must capture the actual protocol/RPC/SDK/wallet matrix and resource settings.
 The repository remains pinned to Rust 1.94.1, SDK 27.0.6, host 27.0.1 in Cargo.lock,
@@ -338,15 +338,15 @@ local PoC-only documentation inventory and optional evidence paths. They were
 preserved, not silently adopted into the release; reconcile their scope/links
 before separately authorizing their inclusion. The pre-existing untracked evidence
 report/run files remain local historical context, not dependencies of the revised
-release documentation or package. Earlier review sections remain dated evidence;
+release documentation or package. Earlier review sections remain historical evidence;
 the primary architecture contains no review-history commentary.
 
-## Adversarial architecture follow-up — 2026-11-06
+## Adversarial architecture follow-up
 
 ### Scope and disposition
 
 This internal follow-up audits the architecture and its supporting SDK, lifecycle,
-security, decision and operational references as they stood after the 5 November
+security, decision and operational references as they stood after the architecture and documentation
 review. It preserves that review and the earlier historical reports. It is not
 an independent external security audit or a certification of production code.
 Severity below applies to implementing or operating the proposed design as
@@ -363,9 +363,9 @@ follow-up. Changes to proposed interfaces are specifications, not implemented AP
 
 | ID | Severity | Finding / counterexample | Correction | Disposition |
 |---|---|---|---|---|
-| ARC-01 | High | Closure text promised eligibility for a claim “submitted before the deadline.” An RPC accepts it at D, but it executes at D+1 or fails at D. The provider can lose its claim despite satisfying that wording. | [Architecture lifecycle](architecture.md#protected-closure-and-signer-replacement) now requires successful execution in ledger ≤ D, distinguishes enqueue/simulation/signing from execution and preserves finalize only at > D. Vision, wire reference, ADR and runbook agree. | Wording corrected; D−1/D/D+1 execution and failure/retry tests remain implementation gates. |
-| ARC-02 | High | Retry recovery could be read as permitting a new owner grant once its original envelope expired or source sequence was consumed. A separately signed owner auth entry may remain valid in another envelope, so old and new grants can both execute a deposit/open/withdraw. A failed call may also roll nonce consumption back. | [Authorization rules](architecture.md#transaction-source-payer-and-authorizers) now track every issued credential's authorizer/nonce/invocation/expiry independently, reconcile all envelope attempts, and forbid fresh grants for an unresolved economic intent until old authority is consumed with reconciled effects or past expiry with complete outcome coverage. SDK, Console and runbook expose outstanding grants after disconnect. | Design corrected; no on-chain administrative idempotency mechanism is implemented or claimed. |
-| ARC-03 | Medium | The voucher does not bind service body, quote, request ID or delivery identity. An undefined “authenticated request” could be implemented as a bearer voucher or signed-request replay, disclosing a result or serving the wrong client. Request IDs alone do not authenticate retrieval. | [Service protocol](architecture.md#authenticated-service-requests) specifies a separate signed request binding quote/body/voucher/client-certificate hashes, authenticated TLS client matching on all delivery/retrieval paths, scoped deduplication and trusted proxy identity propagation. Payment wire bytes remain unchanged. | Design requirements specified; canonical quote encoding, shared vectors, certificate admission/rotation and adapter tests remain required. |
+| ARC-01 | High | Closure text promised eligibility for a claim “submitted before the deadline.” An RPC accepts it at D, but it executes at D+1 or fails at D. The provider can lose its claim despite satisfying that wording. | [Architecture lifecycle](production-specification.md#protected-closure-and-signer-replacement) now requires successful execution in ledger ≤ D, distinguishes enqueue/simulation/signing from execution and preserves finalize only at > D. Vision, wire reference, ADR and runbook agree. | Wording corrected; D−1/D/D+1 execution and failure/retry tests remain implementation gates. |
+| ARC-02 | High | Retry recovery could be read as permitting a new owner grant once its original envelope expired or source sequence was consumed. A separately signed owner auth entry may remain valid in another envelope, so old and new grants can both execute a deposit/open/withdraw. A failed call may also roll nonce consumption back. | [Authorization rules](production-specification.md#transaction-source-payer-and-authorizers) now track every issued credential's authorizer/nonce/invocation/expiry independently, reconcile all envelope attempts, and forbid fresh grants for an unresolved economic intent until old authority is consumed with reconciled effects or past expiry with complete outcome coverage. SDK, Console and runbook expose outstanding grants after disconnect. | Design corrected; no on-chain administrative idempotency mechanism is implemented or claimed. |
+| ARC-03 | Medium | The voucher does not bind service body, quote, request ID or delivery identity. An undefined “authenticated request” could be implemented as a bearer voucher or signed-request replay, disclosing a result or serving the wrong client. Request IDs alone do not authenticate retrieval. | [Service protocol](production-specification.md#authenticated-service-requests) specifies a separate signed request binding quote/body/voucher/client-certificate hashes, authenticated TLS client matching on all delivery/retrieval paths, scoped deduplication and trusted proxy identity propagation. Payment wire bytes remain unchanged. | Design requirements specified; canonical quote encoding, shared vectors, certificate admission/rotation and adapter tests remain required. |
 | ARC-04 | Medium | Caller-supplied budget IDs and a loosely specified new “budget period” permitted mismatched agent/provider subjects or duplicate budgets that undermine a lifetime subject cap. | Resolve canonical `(kind, subject)` budget keys inside channel creation, require one budget per subject, immutable channel association and matching kinds/subjects; `set_budget` updates cap in place without resetting counters. The initial version excludes epochs/deletion/recreation. | Proposed ABI and schema corrected; cap guarantees cover registered identities, not inferred real-world processes. Enrollment of another identity is explicitly new owner authority. |
 | ARC-05 | Medium | Database leases/fencing were presented without their network-authority limit. A stale worker can still broadcast a previously released signed envelope after its lease expires. | Signer/broadcaster check the current fence, retain all released attempts, and quarantine unresolved intents through failover. Lease expiry never cancels signed envelopes or portable grants. | Scheduling/recovery design corrected; split-brain and stale-broadcast exercises required. |
 | ARC-06 | Medium | Reconciliation lacked a common-ledger condition. Summing channels across changing RPC snapshots and comparing a later treasury balance can falsely indicate a deficit or suggest an invalid repair. | Require ledger/hash-aligned replay snapshots, external SAC changes and explicit inconclusive status when consistency is unavailable. Do not assume ordinary `getLedgerEntries` can select a historical ledger. Runbook and alert semantics aligned. | Design corrected; qualified metadata coverage and reconciliation implementation remain required. |
@@ -389,7 +389,7 @@ was checked for current-state reads and observation-ledger fields. The
 [asset specification](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0046-06.md)
 and pinned host balance code supplied the classic/contract balance distinction;
 [archival documentation](https://developers.stellar.org/docs/learn/fundamentals/contract-development/storage/state-archival)
-was also checked. References were consulted on 6 November 2026; provider behavior
+was also checked. References were consulted during this follow-up; provider behavior
 and target-network versions still require release-time qualification.
 
 Pinned source observations: `soroban-env-host` 27.0.1 `auth.rs` constructs the
@@ -423,7 +423,7 @@ locally instead.
   structural checks. `git diff --check` passed.
 - Accounting release arithmetic and the D execution boundary were reviewed with
   adversarial traces; no production lifecycle implementation exists to test.
-  The prior 66-test native/WASM run remains dated 5 November evidence and was not
+  The prior 66-test native/WASM run remains evidence from the architecture and documentation review and was not
   rerun for this documentation-only follow-up. No new production performance,
   independent external audit, graphical diagram render or live-network result
   is claimed.

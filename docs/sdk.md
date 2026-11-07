@@ -1,6 +1,6 @@
 # SDK and integration reference
 
-[Architecture](architecture.md) owns protocol behavior. This document separates
+[Architecture](ARCHITECTURE.md) and the [production specification](production-specification.md) own protocol behavior. This document separates
 the current private voucher library from the proposed production SDK. All
 workspace packages are private; no registry publication or browser compatibility
 is established by their package names.
@@ -128,7 +128,7 @@ issued owner auth entries before any later envelope is built; track their
 authorizer, nonce, invocation digest and expiration independently of transaction
 bounds. Re-enveloping with another source does not cancel that authority, and
 reissuing it with a new nonce can execute a second non-idempotent action. See the
-[transaction authorization rules](architecture.md#transaction-source-payer-and-authorizers). Separate read-only
+[transaction authorization rules](production-specification.md#transaction-source-payer-and-authorizers). Separate read-only
 transport from signing; allow caller-provided fetch, abort signal, bounded retry
 policy and endpoint configuration. Validate endpoint network before using it;
 never fall back to a different network or contract silently. Caller-supplied
@@ -145,7 +145,7 @@ reconciliation controls and cannot mean “safe to pay again.”
 
 Production payment adapters must verify the separate authenticated request
 message and its TLS client-identity binding defined in the
-[service protocol](architecture.md#authenticated-service-requests). A valid
+[service protocol](production-specification.md#authenticated-service-requests). A valid
 payment voucher, request ID or replayed request signature alone is not authority
 to receive a service result. This additional protocol does not change the
 current voucher codec and requires its own canonical quote/request vectors.

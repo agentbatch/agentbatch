@@ -123,7 +123,7 @@ The PoC has no claim expiration or close function. Proposed production closure
 therefore cannot prove that a voucher was signed before close-start; it honors
 valid claims that execute successfully at or before the contract deadline
 ledger and releases funds afterward. Earlier RPC submission alone does not
-preserve an unexecuted claim. See [architecture](architecture.md#4-production-contract-and-lifecycle-design).
+preserve an unexecuted claim. See [architecture](production-specification.md#4-production-contract-and-lifecycle-design).
 The proposed `AGENTBATCH_V1` production domain retains the eight-field layout
 with a different domain symbol and needs new frozen vectors. It is not
 implemented. Preserve this reference for PoC v1 evidence; do not relabel its
@@ -132,6 +132,6 @@ bytes as another protocol version.
 
 The proposed service adapter authenticates request body, quote, request ID and
 client delivery identity separately from the payment voucher; see
-[authenticated service requests](architecture.md#authenticated-service-requests).
+[authenticated service requests](production-specification.md#authenticated-service-requests).
 Neither possession of a valid voucher nor a guessed request ID grants access to
 service/results. This is not functionality of the implemented PoC wire format.

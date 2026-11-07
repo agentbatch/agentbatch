@@ -1,10 +1,16 @@
-# AgentBatch architecture
+# AgentBatch production specification
 
-This is the primary architecture for the completed product described in the
-[vision](vision.md). **Production sections specify a proposed implementation;
-they do not describe a deployed product.** The repository currently contains a
-Testnet PoC. No production release, Mainnet deployment, independent security
-audit, production service, or availability commitment is established here.
+This is the detailed normative specification behind the system architecture in
+[ARCHITECTURE.md](ARCHITECTURE.md). The architecture document explains the
+complete platform, its accounting model, workflows, trust boundaries and
+implementation status; this document holds the precise contract, protocol,
+transaction, storage, data and service requirements those sections summarize.
+Engineering work that remains open is tracked in [FUTURE_WORK.md](FUTURE_WORK.md).
+
+**Production sections specify a proposed implementation; they do not describe a
+deployed product.** The repository currently contains a Testnet PoC. No
+production release, Mainnet deployment, independent security audit, production
+service, or availability commitment is established here.
 
 The design provides an organization-funded treasury, collateralized virtual
 channels, delegated cumulative vouchers, and bounded settlement to independent
@@ -62,20 +68,20 @@ payment authority, not that a service was delivered or that its output is correc
 | Provider library | Implemented sequential verifier and memory/file stores | Transactional request deduplication and durable acceptance journal |
 | SDK | Private Node voucher package; handwritten client in Testnet tools | Generated bindings, browser-safe core, wallet and transport interfaces |
 | Console, indexer, hosted API, keeper | Absent | Production components specified below |
-| Deployment evidence | Committed dated Testnet manifest and raw transaction XDR | Reviewed immutable production release manifest and durable artifacts |
+| Deployment evidence | Committed historical Testnet manifest and raw transaction XDR | Reviewed immutable production release manifest and durable artifacts |
 | Integrations | Offline example and simulated providers | Tested, versioned adapters; no implicit MPP/x402 interoperability |
 
 Current sources are [`lib.rs`](../contracts/agentbatch-poc/src/lib.rs),
 [`types.rs`](../contracts/agentbatch-poc/src/types.rs),
 [`storage.rs`](../contracts/agentbatch-poc/src/storage.rs), and
 [`packages/voucher`](../packages/voucher/src/index.ts). The committed
-[Testnet manifest](../deployments/testnet/manifest.json) records the 24 October
-2026 deployment, SDK 27.0.6, JS SDK 17.2.1, CLI 26.0.0, Rust 1.94.1, and observed
+[Testnet manifest](../deployments/testnet/manifest.json) records the archived
+deployment, SDK 27.0.6, JS SDK 17.2.1, CLI 26.0.0, Rust 1.94.1, and observed
 protocol 29/RPC 30. Those are historical observations, not a current network
 compatibility promise. `Cargo.lock`, `pnpm-lock.yaml`, `rust-toolchain.toml`, and
 CI define the reproducible baseline. The changelog's historical 0.2.0 heading
 does not change the workspace/package version of 0.1.0 or make private packages
-published. Recorded benchmarks apply only to their dated workloads.
+published. Recorded benchmarks apply only to their recorded workloads.
 
 ## 2. Components, deployment, and trust
 

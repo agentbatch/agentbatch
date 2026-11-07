@@ -12,6 +12,10 @@ pnpm build
 pnpm check      # format, lint, contract + TS tests, archive checks, offline example
 ```
 
+On machines with less than about 8 GB of memory, the contract build and test
+run can be killed by the operating system. Limit parallelism:
+`CARGO_BUILD_JOBS=1 cargo test --locked --workspace -- --test-threads=1`.
+
 ## Rules for changes
 
 - **Contract changes** need tests. Authorization tests use enforcing
@@ -47,7 +51,7 @@ pull request template for any contract change.
 ## Review requirements
 
 Describe the concrete problem, resulting behavior, compatibility and validation.
-Separate implemented behavior from proposals and dated evidence. Update the owning
+Separate implemented behavior from proposals and recorded evidence. Update the owning
 API, architecture or runbook when behavior changes; keep review findings in
 [the separate report](docs/review-findings.md). Do not change archived identities
 or measurements to describe new code.

@@ -7,14 +7,14 @@ decided. Each item links to the code or test that implements the decision.
 
 ## Environment findings
 
-These are historical observations from the 24 October 2026 implementation
-review. Version references here describe that environment, rather than current
-release recommendations.
+These are historical observations from the implementation review. Version
+references here describe that environment, rather than current release
+recommendations.
 
 | # | Finding | Decision |
 |---|---|---|
 | E1 | Installed: rustc 1.94.1, stellar CLI 26.0.0, soroban-sdk 27.0.6 (local cache). The latest crates.io release was 29.0.1; Testnet runs protocol 29. | Kept **27.0.6**, following "no unnecessary upgrades". A contract built with SDK 27 runs on protocol 29, as the Testnet run confirms. |
-| E2 | `@stellar/stellar-sdk` 17.3.0 was 3 days old. | Pinned **17.2.1** (released 2026-10-01). TypeScript 6.0.3, vitest 4.1.11, tsx 4.23.15: all exact versions. |
+| E2 | `@stellar/stellar-sdk` 17.3.0 had only just been released. | Pinned **17.2.1**, the preceding release. TypeScript 6.0.3, vitest 4.1.11, tsx 4.23.15: all exact versions. |
 | E3 | soroban-sdk ≥ 23 emulates automatic restoration of archived entries in tests (protocol 23 behavior). "Archived channel" therefore cannot be tested as an access error. | The tests assert exact TTL values and that an archived channel is restored with its full state, so replay protection survives archival (`storage.rs`). |
 
 ## Specification items
