@@ -272,7 +272,11 @@ window backed by recovery exercises; no arbitrary production window is chosen
 from the PoC's TTL constants. Claims are accepted while open or while closing
 with `ledger.sequence <= D`; finalization requires `sequence > D`. Among
 redemption/finalization of a closing channel, only redemption is eligible at D.
-A repeated start-close returns the original D; no caller can shorten or extend D,
+`start_close` also extends the channel entry's storage lifetime beyond D plus a
+safety margin, so the claim window never depends on an external keeper; W plus that
+margin must stay below the network's maximum entry lifetime, which the constructor
+checks. Storage-lifetime targets are constructor parameters, so each network can be
+tuned. A repeated start-close returns the original D; no caller can shorten or extend D,
 reopen a closing record, or reassign its remaining collateral. Eligibility uses
 the ledger in which the invocation executes successfully, not signing time,
 RPC receipt, queue acknowledgment or simulation ledger. Competing transactions

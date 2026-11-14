@@ -137,7 +137,7 @@ flowchart TB
 |---|---|---|---|
 | Custody | Treasury contract | Holds funds; accounting; channel records; voucher verification; payouts | Implemented (PoC ABI); v2 proposed |
 | Custody | Stellar Asset Contract | Token balances and transfers; issuer controls | External (Stellar built-in) |
-| Authorization | Owner wallet | Deposits, channel opening, withdrawal; future budgets/closure | External; flows proposed |
+| Authorization | Owner wallet | Deposits, channel opening, withdrawal; future spending limits/closure | External; flows proposed |
 | Authorization | Agent signer | Holds delegated keys and the highest-ever-signed counter per channel | Library implemented; durable service proposed |
 | Acceptance | Provider adapter + journal | Verifies vouchers before service; durable, deduplicated acceptance | Library implemented (sequential); service proposed |
 | Settlement | Coordinator | Collects latest vouchers, simulates, submits bounded batches, reconciles | Logic inside Testnet runner only; service proposed |
@@ -176,6 +176,12 @@ Errors are numbered 101–113, separate from SAC errors 1–15. There is no upgr
 pause, close, setter or sweep function. Full interface, failure and event details:
 [production specification §3](production-specification.md#3-implemented-contract-specification).
 
+The PoC was built with Stellar CLI 26.0.0 and recorded on protocol 29. It still
+executes on Testnet protocol 30: a read-only `get_treasury` simulation returns the
+archived post-run state. Its toolchain stays pinned so CI can reproduce the
+deployed hash; a new contract version moves to a current, compatible CLI and SDK
+pair ([maintenance §5](maintenance.md#5-stellar-toolchain-and-compatibility)).
+
 ### 4.2 Production treasury contract (v2) — proposed
 
 A new, separately deployed contract version (no in-place upgrade) that keeps the
@@ -183,12 +189,14 @@ PoC's deposit, redemption and withdrawal semantics and adds:
 
 | Addition | Purpose | Backlog |
 |---|---|---|
-| `set_budget(kind, subject, cap)` | One lifetime budget per agent ID and per provider; `spent + reserved ≤ cap` | [FW-TRE-01](FUTURE_WORK.md#fw-tre-01) |
-| `open_channel_v2(…, agent_id, key_proof)` | Budget association and on-chain proof of possession for the agent key | [FW-CH-04](FUTURE_WORK.md#fw-ch-04) |
-| `increase_allocation(channel, x)` | Safe top-up against available funds and both budgets | [FW-CH-02](FUTURE_WORK.md#fw-ch-02) |
+| `set_budget(kind, subject, cap)` | Defines a stable owner-chosen agent ID (kind `Agent`) or a provider (kind `Provider`) with one lifetime spending limit each; `spent + reserved ≤ cap` | [FW-TRE-01](FUTURE_WORK.md#fw-tre-01) |
+| `open_channel_v2(…, agent_id, key_proof)` | Spending limit association and on-chain proof of possession for the agent key | [FW-CH-04](FUTURE_WORK.md#fw-ch-04) |
+| `increase_allocation(channel, x)` | Safe top-up against available funds and both spending limits | [FW-CH-02](FUTURE_WORK.md#fw-ch-02) |
 | `start_close(channel)` / `finalize_close(channel)` | Open → Closing → Closed with immutable claim window `W`; remaining collateral released exactly once after deadline `D` | [FW-CH-01](FUTURE_WORK.md#fw-ch-01) |
-| `get_budget`, `get_channel_v2`, `get_config` | Versioned views | [FW-TRE-06](FUTURE_WORK.md#fw-tre-06) |
-| Domain `AGENTBATCH_V1` | Same eight-field payload, new domain symbol | [FW-VP-01](FUTURE_WORK.md#fw-vp-01) |
+| `get_budget`, `get_channel_v2`, `get_config` | Versioned views; `get_config` returns protocol version, domain, asset, owner, claim window and storage lifetime targets | [FW-TRE-06](FUTURE_WORK.md#fw-tre-06) |
+| Domain `AGENTBATCH_V1` | Same eight-field payload, new domain symbol, so PoC vouchers fail on v2 | [FW-VP-01](FUTURE_WORK.md#fw-vp-01) |
+| Versioned events | One event per state change: deposit, spending-limit change, opening, top-up, closure start, finalization, redemption, withdrawal | [FW-ARCH-01](FUTURE_WORK.md#fw-arch-01) |
+| Lifetime constructor parameters | Instance and channel storage-lifetime targets set per deployment and checked against the network's maximum entry lifetime | [FW-PERF-03](FUTURE_WORK.md#fw-perf-03) |
 
 ```mermaid
 stateDiagram-v2
@@ -200,8 +208,41 @@ stateDiagram-v2
     Closed --> [*]: terminal record retained, ID never reused
 ```
 
-The PoC implements only the `Open` state with redemption. Exact semantics, guards
-and boundary rules are in
+The PoC implements only the `Open` state with redemption. The v2 rules:
+
+- **Agent identity and spending limits.** Each channel stores an agent ID and the agent's
+  current signing key. Spending limits follow the agent ID, so replacing a key means opening
+  a new channel under the same ID, and the agent's spending history carries over.
+  Every allocation counts once against the agent's spending limit and once against the
+  provider's: two independent limits on the same funds, not a double charge.
+  Opening and top-up add to `reserved`, a payout moves the paid amount from
+  `reserved` to `spent`, and finalization releases the unused reservation. No operation may make
+  `spent + reserved` exceed a cap, or lower a cap below it.
+- **Key proof.** `open_channel_v2` requires a signature by the new agent key over
+  network, contract, owner, agent ID, provider and allocation, under its own
+  domain, checked with the host's strict Ed25519 rule. Non-canonical and
+  small-order keys are rejected.
+- **Top-up.** Owner only, while `Open`, checked against available funds and both
+  spending limits. Allocations are never reduced before finalization.
+- **Closure.** Only the owner calls `start_close`. It records ledger `L`, fixes
+  `D = L + W` and extends the channel entry's lifetime beyond `D` plus a safety
+  margin, so the claim window never depends on an off-chain keeper. While
+  `Closing`, top-ups fail, `a − r` stays reserved, and valid vouchers redeem at
+  every ledger up to and including `D`. From `D + 1`, redemption fails and anyone
+  may call `finalize_close`, which returns `a − r` to available funds exactly once;
+  a second call fails. A repeated `start_close` returns the original `D`. `W` plus
+  the margin must stay below the network's maximum entry lifetime (3,110,400
+  ledgers at the last review), and the constructor rejects longer values.
+- **Terminal records.** A closed channel keeps a minimal persistent record. An
+  archived persistent entry is never read as missing on Soroban: a transaction
+  that touches it must restore it first, so a closed channel cannot reappear as
+  new or open. Channel IDs come from a monotonic counter.
+- **Issuer as provider.** Refusing the asset's issuer as a payout address is
+  enforced by clients through the asset admission record ([§11.1](#111-release-asset-admission-and-launch)),
+  not by the contract: a payment to an issuer retires the units and is not a
+  payment-safety violation.
+
+Exact semantics, guards and boundary rules are in
 [production specification §4](production-specification.md#4-production-contract-and-lifecycle-design).
 
 ### 4.3 Dependencies and excluded on-chain components
@@ -211,7 +252,7 @@ base design has **no** global factory, router, registry with authority, or
 cross-treasury contract; batches target one treasury
 ([ADR-001](decisions.md#adr-001-isolate-treasury-custody-per-organization-and-asset)).
 A deployment catalog may map releases to contract IDs, but it holds no authority
-over funds. Cross-treasury budgets are research ([FW-ARCH-03](FUTURE_WORK.md#fw-arch-03)).
+over funds. Cross-treasury spending limits are research ([FW-ARCH-03](FUTURE_WORK.md#fw-arch-03)).
 
 ## 5. Off-chain component architecture
 
@@ -229,6 +270,22 @@ over funds. Cross-treasury budgets are research ([FW-ARCH-03](FUTURE_WORK.md#fw-
 | Durable signer service | — | Planned | Highest-ever-signed counter with CAS ([FW-SDK-03](FUTURE_WORK.md#fw-sdk-03)) |
 | Provider acceptance service | — | Planned | Transactional journal, deduplication, outbox ([FW-PRV-01](FUTURE_WORK.md#fw-prv-01)) |
 | Coordinator, keeper, indexer, API, Console | — | Planned | [Production specification §9–§10](production-specification.md#9-treasury-console-and-sdk) |
+
+### 5.1 Target behavior of the off-chain components (planned)
+
+| Component | Required behavior |
+|---|---|
+| **Durable agent signer** | Persists the highest cumulative amount it has authorized per channel before releasing a voucher, with one writer per channel (lock or compare-and-set). A retry of the same request returns the stored voucher. It never issues two different vouchers for one cumulative amount, a lower amount after a higher one, or more than the allocation, and restarts from its stored value, never from on-chain `redeemed`. Agent keys are kept encrypted or in an external key service and never leave the signer |
+| **Provider journal** | PostgreSQL reference backend and SQLite for single-node providers, both held to one conformance suite. Each request moves through `Quoted → PaymentAccepted → Processing → Completed` or `Failed`. The voucher is accepted in the same database transaction that records `PaymentAccepted`; the service starts only after that commit and its result is stored before it is returned. An identical retry returns the stored result; a conflicting reuse of a request ID is rejected. A request interrupted in `Processing` is resumed if the service is marked safe to repeat, otherwise marked `Failed`. Because cumulative vouchers cannot be refunded on-chain, a failed delivery is handled by an explicit provider refund policy outside the contract, such as crediting the amount against the agent's next request on that channel. The coverage rule `max(h, r) − r ≤ a − r` ([§6.5](#65-vouchers-allocations-settlement-and-withdrawal)) is enforced on every acceptance |
+| **HTTP 402 provider middleware** | Express adapter plus a framework-neutral conformance suite. Answers unpaid requests with HTTP 402 and a canonical quote (provider, service, price, expiry, request scope). Before admitting a channel it reads allocation, signer and status from two configured RPC endpoints and requires agreement at the same ledger: a data-integrity check against one faulty or stale endpoint, not proof that both are honest |
+| **Authenticated requests** | The agent signs, with the channel's agent key and under a separate request domain, the canonical request: body hash, quote hash, voucher hash, request ID, expiry ledger, channel, provider, contract, network and the fingerprint of its TLS client certificate, which the provider also requires on the connection. A stolen voucher therefore cannot buy service for another caller. A retry stays bound to its original quote; a request after quote expiry is re-quoted at the current price ([production specification](production-specification.md#authenticated-service-requests)) |
+| **Agent client** | A fetch wrapper that handles 402 responses, obtains vouchers from the signer and retries with the same request ID |
+| **Closing-state monitor** | Stops accepting vouchers on a channel once it is `Closing`, restores any archived entry the redemption needs (any account can), and self-submits outstanding claims with a margin before `D` |
+| **Settlement coordinator** | Collects claims from provider journals, re-reads `redeemed` before each batch and drops settled claims, leases each channel to one batch at a time, and simulates. Because batches are atomic, failing candidates are isolated: permanently invalid ones (stale, above allocation, bad signature) are quarantined and never retried; transient failures (frozen trustline, RPC error) are retried with backoff. Claims near their deadline go first. Results are recorded by transaction hash so a restart never double-counts. Providers can always self-submit instead |
+| **Indexer and reconciliation** | Ingests versioned events with persisted checkpoints into an append-only raw archive and reports gaps instead of skipping them. Reconciles at one ledger: channel sums against treasury totals, and totals against the token balance. Reports balance, obligations (`A + R`) and their difference separately: a shortfall raises a deficit alert; a surplus from unsolicited transfers is reported but never counted as available |
+| **Storage keeper and deadline watcher** | Inventories every entry a redemption needs (code, instance, channels, token balances), reads each entry's live-until ledger from RPC, extends lifetimes in bounded chunks before the margin, and prepares restoration transactions that any account can submit. The watcher alerts before `D` minus a configured margin |
+| **Read API** | Versioned HTTP API described by an OpenAPI schema for treasuries, channels, spending limits and claims; every response states the ledger it reflects |
+| **Treasury Console** | Shows, before any approval, available funds, reservations per channel, outstanding claims and closure deadlines. Each action is simulated and shows exactly what will change, and invalid actions show the decoded contract error. Actions pass through a durable state machine (`Draft → Simulated → Signed → Submitted → Confirmed`, `Failed` or `Expired`); after a reload or timeout the Console looks up the recorded transaction instead of building a second one for the same intent. The contract stays the final protection: a signed transaction executes at most once |
 
 ## 6. Treasury and channel data model and accounting
 
@@ -248,7 +305,7 @@ divides, rounds or converts.
 | Channel | `u64`, sequential from 1, never reused | On-chain (`DataKey::Channel(id)`) |
 | Voucher | `(channel_id, cumulative amount, signature)` | Off-chain; submitted at redemption |
 | Settlement record | Transaction hash, `voucher_redeemed` and `batch_redeemed` events | On-chain history; indexer (proposed) |
-| Agent / provider budget | `(kind, subject)` key | Proposed v2 |
+| Agent / provider spending limit | `(kind, subject)` key | Proposed v2 |
 
 ```mermaid
 flowchart TB
@@ -258,7 +315,7 @@ flowchart TB
         C1["Channel 1<br/>provider P1 · agent key K1<br/>allocation a1 · redeemed r1"]
         C2["Channel 2<br/>provider P2 · agent key K2<br/>allocation a2 · redeemed r2"]
         CN["Channel n …"]
-        BUD["Budgets per agent / provider<br/>(proposed v2)"]
+        BUD["Spending limits per agent / provider<br/>(proposed v2)"]
     end
     SACB["SAC balance of the treasury = B"]
     TRS -->|"R = Σ (a − r)"| C1 & C2 & CN
@@ -342,8 +399,8 @@ In production (v2) the release term joins the channel identities, and the same
 reasoning yields: `remaining_c = a_c − r_c − l_c`, `R = Σ remaining_c`,
 `Σ a_c = R + P + Σ l_c`, and `A = Dp − X − Σ a_c + Σ l_c`. Released collateral is
 the only way reserved funds become withdrawable again, and it happens once per
-channel, after its deadline. Budget layer (proposed): for each agent or provider
-budget `b`, `spent_b + reserved_b ≤ cap_b`, where a payout moves `delta` from
+channel, after its deadline. Spending-limit layer (proposed): for each agent or provider
+spending limit `b`, `spent_b + reserved_b ≤ cap_b`, where a payout moves `delta` from
 `reserved_b` to `spent_b`. Settlement therefore never frees spending headroom
 ([production specification §4](production-specification.md#financial-conservation-and-aggregate-budgets)).
 
@@ -433,7 +490,7 @@ and a further base unit was rejected (`#102`).
 |---|---|---|
 | Format | XDR `ScVal::Map` of `amount, channel_id, contract, domain, network, owner, provider, signer` (sorted keys) | Same fields, domain `AGENTBATCH_V1` ([FW-VP-01](FUTURE_WORK.md#fw-vp-01)) |
 | Signature | Pure Ed25519 by the channel's agent key; host `verify_strict` | Unchanged |
-| Scope binding | Network ID, contract, owner, channel, provider, signer — all rebuilt from storage and ledger on-chain; the caller submits only channel, amount and signature | Unchanged; budget associations via the channel record |
+| Scope binding | Network ID, contract, owner, channel, provider, signer — all rebuilt from storage and ledger on-chain; the caller submits only channel, amount and signature | Unchanged; spending limit associations via the channel record |
 | Monotonicity / replay | Cumulative amount; `r_c < v ≤ a_c` required; stale and replayed vouchers fail | Unchanged |
 | Nonces | None needed: the cumulative amount is the counter | Unchanged |
 | Expiry | None in the voucher | Channel deadline `D`: claims must **execute** in ledger ≤ D |
@@ -613,6 +670,25 @@ rests on the payload binding plus the stored payout address. Residual risks,
 production threat model and required mitigations:
 [security-assumptions.md](security-assumptions.md#production-threat-model-and-residual-risks).
 
+### 9.3 Verification and testing architecture
+
+| Layer | Today | Planned |
+|---|---|---|
+| Accounting | Randomized model asserting I1–I8 after every step | An accounting model written independently of the contract, covering agent IDs, spending limits, top-ups, closure, release, token freeze and clawback, driven by randomized sequences with at least two agents and three providers |
+| Authorization | Enforcing `mock_auths` with exact invocation trees | Mutation testing in CI over a published list of high-impact mutations (every authorization check, allocation and spending-limit bound, deadline check); the suite must fail for each |
+| Encoding and arithmetic | Shared Rust/TypeScript vectors, including host-rejected signatures | Property and fuzz tests for integer boundaries and XDR round trips of vouchers, quotes and events, with a time limit per target in CI |
+| Lifecycle boundaries | — | Tests at ledgers `D − 1`, `D` and `D + 1`, repeated start and finalize, redemption and finalization in one ledger |
+| Off-chain durability | Sequential tests | Concurrency and crash-injection tests at every write step of signer and journal, including between payment acceptance and service completion |
+| On-chain evidence | Archived run with three intentionally failed transactions | Every expected rejection submitted as a real failing transaction; storage restoration drilled on a deployment with the network's minimum entry lifetime, triggered by the entry's actual live-until ledger |
+| End to end | Testnet runner | One command that runs several agents and providers through middleware, coordinator, closure and withdrawal and writes an evidence file reconciled against RPC; network fees per paid request measured |
+| Release | CI reproduces the deployed WASM hash | Tagged reproducible releases, an internal pre-release review with published dispositions, and an independent assessment before unrestricted use ([§11.1](#111-release-asset-admission-and-launch)) |
+
+The batch cap is qualified by measurement: every batch size up to the first that
+exceeds a network limit is measured with first and repeated payouts, account and
+contract recipients and maximum-size events, and the cap is the largest size
+whose worst observed use of every resource stays within 80% of the limit. That
+margin covers the measured scenarios only.
+
 ## 10. Integration architecture
 
 ```mermaid
@@ -656,6 +732,24 @@ network, their channel ID, the agent's signing interface, and the redemption
 entry point. No third-party integration exists today; MPP and x402 payloads are not
 interchangeable with AgentBatch vouchers.
 
+### 10.1 Developer packages and tooling (planned)
+
+| Artifact | Design |
+|---|---|
+| SDK core | Browser-safe entry with no Node built-ins: canonical voucher encoding, signing, strict verification, key-safety checks, and an exact decimal parser that converts amounts to integer stroops without floating point |
+| Node entry | File and database persistence for signer and provider state |
+| Generated bindings | TypeScript bindings and typed errors generated from the released contract specification, which is the single source of the contract interface and voucher layout; contract and Stellar Asset Contract errors stay distinct |
+| Provider middleware and agent client | Separate packages per role ([§5.1](#51-target-behavior-of-the-off-chain-components-planned)) |
+| Treasury CLI | Built on the bindings: deploy, set spending limit (which also defines an agent ID), deposit, open channel (with key proof), top-up, start closure, finalize, withdraw, status. Every command simulates first and shows the balance and allocation changes before signing, with JSON output for scripts; it is an operator tool, not a wallet |
+| Owner wallets | Contract-account and multisignature owners supported through the SDK, CLI and Console. The contract already authorizes the owner through `require_auth`, so no contract change is needed. The SDK tracks the nonce and expiry of every owner authorization it issues and never issues a second one for an unresolved intent |
+| Testnet setup script | One command that funds accounts through Friendbot, issues a test asset, sets trustlines and deploys a treasury owned by a given account |
+| Evidence verifier | Extended to v2 events and lifecycle transactions and to Mainnet ([§11.1](#111-release-asset-admission-and-launch)) |
+| Documentation | Provider, agent and operator guides; API reference generated from the OpenAPI schema and contract reference from the specification; CI checks for links, anchors, diagrams and reference coverage; a quick start from an empty project to a paid Testnet request |
+
+Packages are published with provenance and a compatibility table mapping each
+package version to the contract versions and voucher domains it supports
+([maintenance §8](maintenance.md#8-sdk-and-developer-api-maintenance)).
+
 ## 11. Deployment and operations
 
 | Topic | Today (Testnet PoC) | Target |
@@ -669,6 +763,31 @@ interchangeable with AgentBatch vouchers.
 | Evidence | Committed raw XDR; offline and RPC verifiers | Durable archive beyond RPC retention |
 
 Governance, releases and support: [maintenance.md](maintenance.md).
+
+### 11.1 Release, asset admission and launch
+
+- **Release manifest.** Each release records network, contract ID, code hash,
+  build image, source revision, constructor configuration, salt and admitted
+  asset, validated against a schema in CI and checked by the evidence verifier.
+- **Asset admission.** An admission record binds network, issuer, SAC contract ID
+  and decimals. The SDK, CLI and Console refuse a treasury whose asset does not
+  match it, and refuse to open a channel to the issuer.
+- **Claim window.** The Mainnet `W` is derived from measured monitoring lag,
+  recovery and submission margins in Testnet drills, and published with those
+  measurements.
+- **Launch modes.** A Mainnet deployment starts as a **controlled deployment**:
+  only operator-funded treasuries, under a published total cap. **Unrestricted
+  use**, meaning treasuries funded by other organizations, is enabled only after an
+  independent security assessment with no open Critical or High finding.
+- **Operations at launch.** Coordinator, indexer, keeper and deadline watcher run
+  against Mainnet with alerts for deficits, storage-lifetime margins, approaching
+  deadlines and settlement failures (including issuer freezes and clawbacks), each
+  with an exercised runbook. The contract tracks obligations exactly but cannot pay
+  a provider whose balance or the treasury's is frozen by the issuer.
+- **Repository controls.** Private vulnerability reporting, branch protection with
+  required review, signed release tags with build provenance, and a public register
+  of security findings and their dispositions
+  ([maintenance §16](maintenance.md#16-maintenance-sustainability)).
 
 ## 12. Scalability and performance
 
@@ -696,7 +815,8 @@ written once per batch. A batch of *n* vouchers therefore declares about
 `2 + 2n` written entries, `776 + 532n` write bytes and `730,242 + 856,762n`
 instructions. Extrapolating linearly against network limits observed during the archived run
 (`stellar network settings`, which warned it may not list every protocol-29
-setting):
+setting; the same per-transaction values were read again from Testnet under
+protocol 30):
 
 | Limit (per transaction) | Value | Linear bound on vouchers |
 |---|---:|---:|
@@ -730,11 +850,13 @@ the sequential PoC, not production-grade), **Planned** (specified, not built),
 |---|---|---|---|---|---|
 | Treasury contract (PoC) | Custody, accounting, channels, redemption, withdrawal | Implemented | [`contracts/agentbatch-poc`](../contracts/agentbatch-poc/src/lib.rs) | Superseded by v2 for production | SAC |
 | Accounting invariants | I1–I8 | Implemented, tested | [`test/mod.rs`](../contracts/agentbatch-poc/src/test/mod.rs), [`accounting.rs`](../contracts/agentbatch-poc/src/test/accounting.rs) | Independent model for v2 lifecycle | — |
-| Treasury contract v2 | Budgets, top-up, closure, key proof, config view | Planned | — | FW-ARCH-01, FW-TRE-01, FW-CH-01…04 | Claim window decision |
+| Treasury contract v2 | Spending limits, top-up, closure, key proof, config view | Planned | — | FW-ARCH-01, FW-TRE-01, FW-CH-01…04 | Claim window decision |
 | Voucher encoding + strict verification | Wire format, host-compatible verification | Implemented | [`packages/voucher`](../packages/voucher/src/index.ts) | v2 domain vectors (FW-VP-01) | — |
 | Agent signer | Monotonic vouchers within allocation | Prototype | [`signer.ts`](../packages/voucher/src/signer.ts) | Durable counter service (FW-SDK-03) | Database |
 | Provider verifier + stores | Local acceptance | Prototype | [`verifier.ts`](../packages/voucher/src/verifier.ts), [`store.ts`](../packages/voucher/src/store.ts) | Transactional journal, dedup, outbox (FW-PRV-01) | Database |
 | Authenticated service requests | Bind payment to request, quote and client | Planned | — | FW-VP-02, FW-VP-03 | Adapter design |
+| HTTP 402 middleware and agent client | Provider integration and agent payments | Planned | — | FW-VP-02, FW-SEC-04 | SDK, journal |
+| Treasury CLI and setup script | Operator commands; reproducible Testnet setup | Planned | — | FW-SDK-02 | Generated bindings |
 | Settlement coordinator | Batch building, reconciliation | Prototype (inside runner) | [`settle.ts`](../tools/testnet/src/workflows/settle.ts) | Service with quarantine and leases (FW-BS-01, FW-BS-02) | Indexer, signer |
 | Keeper | TTL, restoration, deadlines | Planned | — | FW-OPS-02, FW-OPS-03 | Funding, ops owners |
 | Indexer, archive, API | History, exports, reconciliation | Planned | — | FW-OPS-01, FW-OPS-04, FW-SDK-05 | Feed provider |
@@ -743,7 +865,8 @@ the sequential PoC, not production-grade), **Planned** (specified, not built),
 | MPP / x402 adapters | External protocol integration | Planned | — | FW-PRV-04, FW-PRV-05 | SDK, service protocol |
 | Billing exports | Organization finance integration | Unspecified | — | FW-OPS-01 | Indexer |
 | Testnet runner | Reproducible demonstration | Implemented | [`tools/testnet`](../tools/testnet/README.md) | — | Testnet |
-| Evidence verifier | Offline / RPC archive checks | Implemented | [`tools/evidence`](../tools/evidence/README.md) | — | — |
+| Evidence verifier | Offline / RPC archive checks | Implemented | [`tools/evidence`](../tools/evidence/README.md) | v2 events and Mainnet support | v2 ABI |
+| Release tooling | Manifest schema, provenance, admission records | Planned | — | FW-DOC-04, FW-TRE-02, FW-SEC-08 | Release authority |
 | Netting, keeper incentives, passkeys, privacy, usage proofs | Extensions | Research | — | FW-RES-* | — |
 
 ## 14. Architecture decisions and trade-offs
@@ -768,7 +891,7 @@ Recorded decisions: [ADR-001 to ADR-006](decisions.md); historical choices:
 Current limitations, all disclosed in [security-assumptions.md](security-assumptions.md):
 
 - Unredeemed collateral and unsolicited tokens are locked; there is no closure, top-up or sweep.
-- No aggregate agent or provider budgets; limits are per channel.
+- No aggregate agent or provider spending limits; limits are per channel.
 - Agent counters are memory-only and provider stores are single-writer.
 - Batch atomicity lets one bad voucher or frozen provider block a batch.
 - Providers trust their RPC endpoint; the contract does not prove agent-key possession.
