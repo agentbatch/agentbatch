@@ -118,32 +118,59 @@ More detail: [vision §10](docs/vision.md#10-main-use-cases).
 ## Why Stellar
 
 - **Programmable escrow with native authorization.** A Soroban contract holds the
-  organization's funds and enforces the reservation and payout rules; Soroban's
-  authorization framework restricts deposits, channel opening and withdrawal to
-  the owner, while redemption stays permissionless and can pay only each channel's
-  stored provider.
-- **Native assets and stablecoins.** The treasury holds any Stellar asset through
-  its built-in Stellar Asset Contract, so the same design works for USDC on Stellar
-  (the production target) without a wrapped token or bridge.
-- **Cheap, atomic multi-party settlement.** One transaction pays several providers
-  all-or-nothing, with network fees paid in XLM. In the recorded workload, one
-  three-provider batch paid 32.23% lower fees than three separate settlements
-  ([benchmarks](docs/benchmarks.md)); that saving applies to that workload only.
-- **Publicly verifiable accounting.** Deposits, reservations, payouts and
-  withdrawals are contract state and events that anyone can reconcile against the
-  ledger, as the [evidence verifier](tools/evidence/README.md) does today.
+  organization's funds and enforces the reservation and payout rules. Soroban
+  authorization restricts deposits, channel opening and withdrawal to the
+  treasury owner, while redemption stays permissionless and can pay only each
+  channel's stored provider.
+- **Real assets, no wrapping.** Every Stellar asset, including XLM and USDC on
+  Stellar (the production target), is exposed to contracts through its Stellar
+  Asset Contract, so the treasury holds the issued asset itself rather than a
+  wrapped token or a bridged copy. Payouts can go to classic accounts or contract
+  addresses. The PoC accepts any 7-decimal token and credits a deposit only when
+  the treasury's balance rises by exactly that amount; production treasuries are
+  restricted to admitted Stellar Asset Contracts.
+- **Atomic multi-provider settlement with fast finality.** One transaction pays
+  several providers (up to four per batch in the PoC) all-or-nothing, and a closed
+  ledger is final, with ledgers closing about every five seconds. Network fees are
+  paid in XLM. In the recorded three-provider workload, one batch paid 32.23% lower
+  fees than three separate settlements ([benchmarks](docs/benchmarks.md)): a
+  measured result for that workload, not a general guarantee.
+- **Simulation before submission.** Soroban simulation returns the resources,
+  fees and outcome of a transaction before it is sent. The Testnet runner already
+  simulates every operation first; the planned coordinator uses the same step to
+  exclude an invalid voucher before it can revert a whole batch.
+- **Publicly verifiable accounting.** Treasury totals and channel records are
+  contract state, and every deposit, channel opening, redemption and withdrawal
+  is an on-chain transaction with a contract event. The
+  [evidence verifier](tools/evidence/README.md) already re-fetches the archived
+  run's transactions from Stellar RPC and checks their hashes, fees, results and
+  payouts. RPC keeps only recent history, so long-term reconciliation needs an
+  archive, which the planned indexer provides.
 
-Requests themselves never touch the chain: thousands of paid requests become
-periodic settlement transactions, which is the recurring, usage-driven activity
-AgentBatch would bring to Stellar. More detail: [vision §12](docs/vision.md#12-utility-for-stellar).
+No transaction is submitted per request: high-frequency usage becomes periodic
+settlement on Stellar, in the treasury's asset, with fees in XLM. Two Stellar
+properties come with this design: contract storage must be kept alive (state
+archival and rent), and the asset issuer's controls (authorization, freeze,
+clawback) can block a payout or create a deficit that no contract can override
+([security assumptions](docs/security-assumptions.md)). More detail:
+[vision §12](docs/vision.md#12-utility-for-stellar).
 
 ## How AgentBatch differs
 
-| Approach | Funding | Settlement | AgentBatch difference |
+| Approach | Where funds are held | On-chain transactions | Several providers in one settlement |
 |---|---|---|---|
-| Per-request payment, such as the [x402 `exact` scheme](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_stellar.md) | Payer's wallet | One on-chain transfer per payment | No transaction per request; providers are paid in periodic batches |
-| One-way payment channel, such as Stellar's [one-way channel](https://github.com/stellar-experimental/one-way-channel) used by the [Stellar MPP SDK](https://github.com/stellar/stellar-mpp-sdk) channel mode | One funded contract per payer–payee pair | Per channel | **One shared treasury** backs many virtual channels, and **several providers settle in one transaction** |
-| AgentBatch | One organization treasury per asset | Atomic batches across providers | Bounded delegation: each agent key can spend only its channel's reserved allocation, and payouts go only to the stored provider |
+| Per-payment transfer: the [x402 `exact` scheme](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_stellar.md) or the [Stellar MPP SDK](https://github.com/stellar/stellar-mpp-sdk) charge mode | The payer's own balance | One transfer per payment | No |
+| One-way payment channel: Stellar's [one-way channel](https://github.com/stellar-experimental/one-way-channel), used by the MPP SDK channel mode | One funded channel contract per payer–recipient pair | Channel setup, then settlement, close or refund per channel; payments off-chain | No: each channel settles separately |
+| AgentBatch | One treasury per organization and asset, with a reserved allocation for each provider channel | Deposit and channel opening, then periodic batch settlement; payments off-chain | Yes: up to four channels in one atomic transaction in the PoC |
+
+What AgentBatch adds is bounded delegation from one pool of funds: an agent key
+can spend only its channel's reserved allocation, payouts go only to the stored
+provider, and the owner can withdraw only unreserved funds. The trade-offs are
+deliberate. All channels of a treasury share one contract, and therefore its code
+risk; every state change writes the treasury's shared state, so transactions on
+one treasury cannot execute in parallel. And the PoC has no channel closure yet:
+its reservations stay locked until the planned v2 contract, whereas one-way
+channels already support closing and refunds.
 
 AgentBatch's voucher encoding follows the commitment convention of the one-way
 channel and the MPP SDK, extended with the channel, owner, provider and signer
