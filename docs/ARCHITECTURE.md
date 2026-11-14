@@ -18,6 +18,15 @@ storage restoration, indexer schemas, service-request protocol, Console behavior
 live in the [production specification](production-specification.md). This
 document summarizes them and links to the owning section rather than repeating them.
 
+> **License and maintenance.** AgentBatch is open source under the
+> [Apache-2.0 license](../LICENSE), which covers the contract, libraries, tools,
+> examples and documentation unless a file or third-party component states
+> otherwise ([licensing and third-party notices](maintenance.md#14-licensing-and-third-party-notices)).
+> Support status, toolchain and protocol compatibility, release, dependency,
+> security and retirement policy are defined in the
+> [maintenance policy](maintenance.md), which is the reference for how every
+> component described here is maintained once built.
+
 Contents:
 [1 Overview](#1-system-overview) ·
 [2 Principles](#2-architecture-principles) ·
