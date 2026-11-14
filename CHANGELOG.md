@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased — Architecture coverage and maintenance policy
+
+Documentation only; contract code and the deployed artifact are unchanged.
+
+- Reworked [docs/maintenance.md](docs/maintenance.md) in place: current maintenance
+  status, the four maintenance areas (source, packages, deployments, operations),
+  support tiers, a toolchain and compatibility table checked against current
+  Stellar releases, contract, provider-claim, SDK, release, dependency, incident,
+  operational, licensing and retirement policy.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) now covers every planned component
+  in detail: v2 agent identities, spending limits, closure ledger rules and
+  storage lifetimes; the off-chain services; the verification and testing
+  architecture; developer packages and tooling; release, asset admission and
+  launch modes.
+- README adds "Why Stellar", an accurate comparison with per-request payments and
+  one-way channels, and support status.
+- [SECURITY.md](SECURITY.md) and the issue template state that private
+  vulnerability reporting is not enabled yet and give the interim route.
+  [CONTRIBUTING.md](CONTRIBUTING.md) adds a command reference, issue and
+  pull-request process and breaking-change rules.
+- [FUTURE_WORK](docs/FUTURE_WORK.md) records the verified hosting-control state and
+  adds toolchain alignment (FW-DX-05) and automated license and advisory checks
+  (FW-DX-06).
+
 ## Unreleased — Architecture, infrastructure and PoC review follow-up
 
 - Added [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the complete platform
